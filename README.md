@@ -123,14 +123,14 @@ Your Jira issues should load within a few seconds.
 
 ## Every time you want to use it
 
-You don't need to repeat all the steps above. From next time:
+You only need to do the setup steps once. From next time:
 
 1. Open Terminal
 2. Navigate to the folder: `cd ~/Desktop/Jira-dashboard`
-3. Start it: `npm start`
-4. Open your browser to `http://localhost:3737`
+3. Run: `npm start`
+4. Switch to your browser -- if you bookmarked `http://localhost:3737` just click that
 
-To stop the dashboard, go back to Terminal and press `Control + C`.
+> The Terminal window needs to stay open in the background while you use the dashboard. You can minimize it -- just don't close it or the dashboard will stop working. When you're done for the day, press `Control + C` in Terminal to shut it down.
 
 ---
 
