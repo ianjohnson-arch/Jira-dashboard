@@ -128,9 +128,10 @@ You only need to do the setup steps once. From next time:
 1. Open Terminal
 2. Navigate to the folder: `cd ~/Desktop/Jira-dashboard`
 3. Run: `npm start`
-4. Switch to your browser -- if you bookmarked `http://localhost:3737` just click that
+4. Minimize Terminal -- leave it running in the background
+5. Click your **Jira Dashboard** bookmark in your browser (or go to `http://localhost:3737`)
 
-> The Terminal window needs to stay open in the background while you use the dashboard. You can minimize it -- just don't close it or the dashboard will stop working. When you're done for the day, press `Control + C` in Terminal to shut it down.
+> Bookmark `http://localhost:3737` in your browser after your first visit so you never have to type it again. Terminal must stay open in the background while you use the dashboard -- minimizing it is fine, but closing it will stop the dashboard. When you're done for the day, press `Control + C` in Terminal to shut it down.
 
 ---
 
