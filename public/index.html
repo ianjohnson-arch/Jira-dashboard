@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jira Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+  --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+  --accent: #58a6ff; --green: #3fb950; --purple: #bc8cff; --red: #f85149;
+}
+body.light {
+  --bg: #ffffff; --surface: #f6f8fa; --surface2: #eaeef2;
+  --border: #d0d7de; --text: #1f2328; --muted: #636c76;
+  --accent: #0969da; --green: #1a7f37; --purple: #8250df; --red: #cf222e;
+}
+body.light .issue-row:not(.hdr):hover { background: #eaeef2; }
+body.light .issue-row.hdr { background: #eaeef2; }
+body.light #copy-toast { background: #dafbe1; border-color: #1a7f37; color: #1a7f37; }
+body.light .btn:hover { background: #d0d7de; }
+body.light .btn.active { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+body.light .btn.active:hover { background: #bfdbfe; }
+body.light .tab:hover { background: var(--surface2); color: var(--text); }
+body.light .tab.active { background: var(--bg); }
+body.light .ms-btn:hover { background: #d0d7de; }
+body.light .ms-btn.has-sel { border-color: var(--accent); color: var(--accent); background: #dbeafe; }
+body.light .ms-btn.has-sel:hover { background: #bfdbfe; }
+body.light .ms-actions button:hover { background: #d0d7de; color: var(--text); }
+body.light .ms-item:hover { background: #eaeef2; }
+body.light .cp-close:hover { background: #d0d7de; color: var(--text); }
+body.light .note-btn:hover { background: #d0d7de; }
+body.light .copy-btn:hover { background: #d0d7de; }
+body.light .stat-card.active { background: #dbeafe; }
+body.light .ms-badge { background: #dbeafe; color: #1d4ed8; }
+body.light .tab.active .cnt { background: #dbeafe; color: #1d4ed8; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; transition: background .2s, color .2s; }
+
+/* ── Header ── */
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: sticky; top: 0; z-index: 200; }
+header h1 { font-size: 16px; font-weight: 700; margin-right: 4px; }
+header h1 span { color: var(--accent); }
+.hdr-sep { width: 1px; height: 22px; background: var(--border); }
+
+.btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 11px; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: background .12s; }
+.btn:hover { background: #2d333b; }
+.btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+
+.btn-group { display: flex; }
+.btn-group .btn { border-radius: 0; border-right-width: 0; }
+.btn-group .btn:first-child { border-radius: 6px 0 0 6px; }
+.btn-group .btn:last-child { border-radius: 0 6px 6px 0; border-right-width: 1px; }
+
+.last-refresh { color: var(--muted); font-size: 11px; margin-left: auto; }
+
+/* ── Tabs ── */
+.tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 18px 0; display: flex; gap: 2px; overflow-x: auto; }
+.tab { padding: 6px 13px; border-radius: 6px 6px 0 0; cursor: pointer; color: var(--muted); font-size: 13px; border: 1px solid transparent; border-bottom: none; margin-bottom: -1px; white-space: nowrap; }
+.tab:hover { color: var(--text); background: var(--surface2); }
+.tab.active { color: var(--text); background: var(--bg); border-color: var(--border); font-weight: 600; }
+.tab .cnt { background: var(--surface2); border-radius: 10px; padding: 1px 6px; font-size: 11px; margin-left: 5px; color: var(--muted); }
+.tab.active .cnt { background: var(--accent); color: #000; }
+
+/* ── Main layout ── */
+.main { padding: 20px 24px; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Stats ── */
+.stats { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; min-width: 100px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; user-select: none; }
+.stat-card:hover { background: var(--surface2); }
+.stat-card .num { font-size: 24px; font-weight: 700; line-height: 1.1; }
+.stat-card .lbl { color: var(--muted); font-size: 11px; margin-top: 3px; }
+.stat-card.s-todo .num { color: var(--muted); }
+.stat-card.s-prog .num { color: var(--accent); }
+.stat-card.s-rev  .num { color: var(--purple); }
+.stat-card.s-done .num { color: var(--green); }
+.stat-card.active { border-color: currentColor; background: var(--surface2); }
+.stat-card.s-todo.active { border-color: var(--muted); }
+.stat-card.s-prog.active { border-color: var(--accent); }
+.stat-card.s-rev.active  { border-color: var(--purple); }
+.stat-card.s-done.active { border-color: var(--green); }
+
+/* ── Filter bar ── */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.filter-search { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 11px; border-radius: 6px; font-size: 13px; width: 200px; }
+.filter-search:focus { outline: none; border-color: var(--accent); }
+.filter-search::placeholder { color: var(--muted); }
+.fsep { width: 1px; height: 22px; background: var(--border); }
+.flbl { color: var(--muted); font-size: 11px; white-space: nowrap; }
+input[type=date] { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 5px 9px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+input[type=date]:focus { outline: none; border-color: var(--accent); }
+
+/* ── Dual range slider ── */
+.date-filter-group { display: flex; flex-direction: column; gap: 6px; width: fit-content; }
+.date-inputs { display: flex; align-items: center; gap: 8px; }
+.dual-range { position: relative; width: 100%; height: 18px; }
+.dual-range-track { position: absolute; top: 50%; left: 7px; right: 7px; transform: translateY(-50%); height: 4px; background: var(--border); border-radius: 2px; pointer-events: none; }
+.dual-range-fill { position: absolute; height: 100%; background: var(--accent); border-radius: 2px; }
+.dual-range input[type=range] { position: absolute; width: 100%; top: 0; height: 100%; pointer-events: none; background: transparent; -webkit-appearance: none; appearance: none; margin: 0; }
+.dual-range input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--accent); }
+.dual-range input[type=range]::-moz-range-thumb { pointer-events: auto; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
+.dual-range input[type=range]::-webkit-slider-runnable-track { background: transparent; }
+.dual-range input[type=range]::-moz-range-track { background: transparent; }
+
+/* ── Multi-select dropdown ── */
+.ms { position: relative; }
+.ms-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.ms-btn:hover { background: #2d333b; }
+.ms-btn.has-sel { border-color: var(--accent); color: var(--accent); }
+.ms-badge { background: var(--accent); color: #000; border-radius: 8px; padding: 0 5px; font-size: 10px; font-weight: 700; }
+.ms-arrow { color: var(--muted); font-size: 10px; }
+.ms-panel { position: absolute; top: calc(100% + 4px); left: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 300; min-width: 200px; max-width: 280px; display: none; }
+.ms-panel.open { display: block; }
+.ms-search-wrap { padding: 8px; border-bottom: 1px solid var(--border); }
+.ms-search { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 9px; border-radius: 5px; font-size: 12px; width: 100%; }
+.ms-search::placeholder { color: var(--muted); }
+.ms-search:focus { outline: none; border-color: var(--accent); }
+.ms-list { max-height: 220px; overflow-y: auto; padding: 4px 0; }
+.ms-item { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+.ms-item:hover { background: var(--surface2); }
+.ms-item input[type=checkbox] { accent-color: var(--accent); width: 13px; height: 13px; cursor: pointer; flex-shrink: 0; }
+.ms-item label { cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-actions { display: flex; gap: 6px; padding: 7px 10px; border-top: 1px solid var(--border); }
+.ms-actions button { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 4px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+.ms-actions button:hover { color: var(--text); background: #2d333b; }
+
+/* ── Issue table ── */
+.group { margin-bottom: 18px; }
+.group-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; cursor: pointer; user-select: none; padding: 2px 0; }
+.group-header h3 { font-size: 13px; font-weight: 600; }
+.grp-count { background: var(--surface2); border-radius: 10px; padding: 1px 8px; font-size: 11px; color: var(--muted); }
+.grp-sub { color: var(--muted); font-size: 11px; }
+.chevron { color: var(--muted); font-size: 10px; margin-left: auto; transition: transform .18s; }
+.group.collapsed .chevron { transform: rotate(-90deg); }
+.group.collapsed .tbl-wrap { display: none; }
+.drag-handle { color: var(--border); font-size: 13px; cursor: grab; line-height: 1; padding: 0 4px 0 0; flex-shrink: 0; }
+.drag-handle:hover { color: var(--muted); }
+.group.dragging { opacity: .4; }
+.group.drag-over-top { border-top: 2px solid var(--accent); }
+.group.drag-over-bot { border-bottom: 2px solid var(--accent); }
+
+.tbl-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; overflow-x: auto; width: 100%; }
+.issue-table { width: 100%; display: block; }
+
+.issue-row { display: grid; width: 100%; border-bottom: 1px solid var(--border); }
+.issue-row:last-child { border-bottom: none; }
+.issue-row.hdr { background: var(--surface2); }
+.issue-row:not(.hdr):hover { background: #1c2128; }
+
+.th-cell { position: relative; overflow: hidden; }
+.th-inner { display: flex; align-items: center; gap: 5px; padding: 11px 16px; white-space: nowrap; overflow: hidden; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); cursor: default; user-select: none; }
+.th-inner.sortable { cursor: pointer; }
+.th-inner.sortable:hover { color: var(--text); }
+.sort-icon { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+.th-inner.sort-asc .sort-icon::after { content: '▲'; color: var(--accent); }
+.th-inner.sort-desc .sort-icon::after { content: '▼'; color: var(--accent); }
+.th-inner:not(.sort-asc):not(.sort-desc) .sort-icon::after { content: '⇅'; }
+
+.resize-handle { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 1; }
+.resize-handle:hover, .resize-handle.dragging { background: var(--accent); opacity: .5; }
+
+.cell { padding: 14px 16px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; }
+.cell.wrap { white-space: normal; word-break: break-word; line-height: 1.5; align-items: flex-start; padding-top: 15px; }
+
+.issue-key { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 12px; font-family: monospace; }
+.issue-key:hover { text-decoration: underline; }
+.issue-link { color: var(--text); text-decoration: none; }
+.issue-link:hover { color: var(--accent); }
+
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+
+.pri-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; flex-shrink: 0; }
+.overdue { color: var(--red); font-size: 12px; font-weight: 600; }
+
+.copy-btn { background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity .15s; flex-shrink: 0; }
+.issue-row:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: var(--surface2); }
+.copy-btn svg { width: 12px; height: 12px; stroke: var(--muted); display: block; }
+
+#copy-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a2e1a; border: 1px solid #1d4a1d; color: var(--green); padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 999; }
+#copy-toast.show { opacity: 1; }
+.sprint-badge { display: inline-block; background: var(--surface2); color: var(--accent); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muted { color: var(--muted); font-size: 12px; }
+
+/* ── Comments popout ── */
+.note-btn { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+.note-btn:hover { background: var(--surface2); }
+.note-btn svg { width: 15px; height: 15px; stroke: var(--muted); }
+.note-btn.has-comments svg { stroke: #e8c44a; }
+
+#comment-popout { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.6); z-index: 500; width: 420px; max-height: 480px; display: none; flex-direction: column; }
+#comment-popout.open { display: flex; }
+.cp-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 9px; border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 8px; }
+.cp-key { color: var(--accent); font-family: monospace; font-size: 13px; font-weight: 700; }
+.cp-title { color: var(--muted); font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-open { color: var(--muted); font-size: 11px; text-decoration: none; white-space: nowrap; }
+.cp-open:hover { color: var(--accent); }
+.cp-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 5px; border-radius: 4px; flex-shrink: 0; }
+.cp-close:hover { color: var(--text); background: var(--surface2); }
+.cp-body { overflow-y: auto; flex: 1; padding: 10px 14px; display: flex; flex-direction: column; gap: 14px; }
+.cp-loading { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+.cp-empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+.comment { display: flex; flex-direction: column; gap: 5px; }
+.comment-meta { display: flex; align-items: center; gap: 8px; }
+.comment-author { font-size: 12px; font-weight: 600; color: var(--text); }
+.comment-date { font-size: 11px; color: var(--muted); }
+.comment-body { font-size: 13px; line-height: 1.55; color: var(--text); background: var(--surface2); border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow-y: auto; }
+.cp-count { color: var(--muted); font-size: 11px; text-align: right; padding: 6px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+.cp-compose { padding: 8px 14px 10px; border-top: 1px solid var(--border); flex-shrink: 0; position: relative; }
+.cp-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; resize: none; line-height: 1.45; min-height: 60px; }
+.cp-textarea:focus { outline: none; border-color: var(--accent); }
+.cp-textarea::placeholder { color: var(--muted); }
+.cp-submit-row { display: flex; justify-content: flex-end; margin-top: 6px; gap: 6px; align-items: center; }
+.cp-char-hint { font-size: 11px; color: var(--muted); flex: 1; }
+.cp-submit { background: var(--accent); border: none; color: #fff; padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.cp-submit:disabled { opacity: .45; cursor: default; }
+body.light .cp-submit { color: #fff; }
+
+.mention-dropdown { position: absolute; bottom: calc(100% + 2px); left: 14px; right: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.4); z-index: 600; overflow: hidden; display: none; }
+.mention-dropdown.open { display: block; }
+.mention-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; cursor: pointer; font-size: 13px; }
+.mention-item:hover, .mention-item.active { background: var(--surface2); }
+.mention-name { font-weight: 600; }
+.mention-handle { color: var(--muted); font-size: 11px; }
+
+/* ── Edit popover ── */
+#edit-popover { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 600; min-width: 190px; max-width: 320px; display: none; flex-direction: column; overflow: hidden; }
+#edit-popover.open { display: flex; }
+.ep-header { padding: 7px 12px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+.ep-list { max-height: 240px; overflow-y: auto; }
+.ep-item { padding: 8px 12px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.ep-item:hover { background: var(--surface2); }
+.ep-item.current { color: var(--accent); font-weight: 600; }
+.ep-input-wrap { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.ep-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 6px; font-size: 13px; width: 100%; font-family: inherit; }
+.ep-input:focus { outline: none; border-color: var(--accent); }
+.ep-save { background: var(--accent); border: none; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; align-self: flex-end; }
+.ep-save:hover { opacity: .88; }
+.ep-loading { padding: 14px 12px; color: var(--muted); font-size: 13px; text-align: center; }
+.editable { cursor: pointer; }
+.editable:hover { opacity: .75; }
+.edit-pencil { opacity: 0; cursor: pointer; padding: 0 3px; color: var(--muted); font-size: 11px; transition: opacity .12s; flex-shrink: 0; }
+.issue-row:hover .edit-pencil { opacity: 1; }
+
+/* ── Misc ── */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+.empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+.error-banner { background: #2e1a1a; border: 1px solid #4a1d1d; color: var(--red); padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; }
+.loading { text-align: center; padding: 60px; color: var(--muted); }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; max-width: 540px; margin: 60px auto; }
+.setup-card h2 { margin-bottom: 8px; }
+.setup-card p { color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+.setup-card code { background: var(--surface2); border: 1px solid var(--border); padding: 12px 16px; border-radius: 6px; display: block; font-family: monospace; font-size: 12px; line-height: 1.8; white-space: pre; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Jira <span>Dashboard</span></h1>
+  <div class="hdr-sep"></div>
+  <div class="btn-group">
+    <button class="btn" id="mode-assigned" onclick="setMode('assigned')">Assigned to Me</button>
+    <button class="btn active" id="mode-both" onclick="setMode('both')">Both</button>
+    <button class="btn" id="mode-watched" onclick="setMode('watched')">Watching</button>
+  </div>
+  <div class="hdr-sep"></div>
+  <button class="btn" onclick="collapseAll()">Collapse All</button>
+  <button class="btn" onclick="expandAll()">Expand All</button>
+  <div class="hdr-sep"></div>
+  <button class="btn" id="doneToggle" onclick="toggleDone()">Show Done</button>
+  <div class="hdr-sep"></div>
+  <button class="btn" onclick="saveDefaultView()" title="Save current filters, tab and mode as default">Save as Default</button>
+  <button class="btn" id="clearDefaultBtn" onclick="clearDefaultView()" style="display:none">Clear Default</button>
+  <div class="hdr-sep"></div>
+  <button class="btn" onclick="loadIssues()">Refresh</button>
+  <button class="btn" id="themeToggle" onclick="toggleTheme()" style="font-size:15px;padding:4px 10px" title="Toggle light/dark mode">🌙</button>
+  <span class="last-refresh" id="lastRefresh"></span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('all')" id="tab-all">All Open <span class="cnt" id="cnt-all">-</span></div>
+  <div class="tab" onclick="switchTab('project')" id="tab-project">By Project <span class="cnt" id="cnt-project">-</span></div>
+  <div class="tab" onclick="switchTab('sprint')" id="tab-sprint">By Sprint <span class="cnt" id="cnt-sprint">-</span></div>
+  <div class="tab" onclick="switchTab('status')" id="tab-status">By Status <span class="cnt" id="cnt-status">-</span></div>
+  <div class="tab" onclick="switchTab('epic')" id="tab-epic">By Epic <span class="cnt" id="cnt-epic">-</span></div>
+</div>
+
+<div class="main">
+  <div id="setup-view" style="display:none">
+    <div class="setup-card">
+      <h2>Setup Required</h2>
+      <p>Create a <strong>.env</strong> file in the project directory with your Jira credentials.</p>
+      <code>JIRA_BASE_URL=https://yourcompany.atlassian.net
+JIRA_EMAIL=you@example.com
+JIRA_API_TOKEN=your_token_here</code>
+    </div>
+  </div>
+  <div id="loading-view" class="loading"><div class="spinner"></div><div>Loading your issues...</div></div>
+  <div id="error-view" style="display:none"></div>
+  <div id="dashboard" style="display:none">
+    <div class="stats">
+      <div class="stat-card s-todo" onclick="toggleStatFilter('todo')" id="sc-todo"><div class="num" id="stat-todo">0</div><div class="lbl">To Do</div></div>
+      <div class="stat-card s-prog" onclick="toggleStatFilter('prog')" id="sc-prog"><div class="num" id="stat-prog">0</div><div class="lbl">In Progress</div></div>
+      <div class="stat-card s-rev"  onclick="toggleStatFilter('rev')"  id="sc-rev"><div class="num" id="stat-rev">0</div><div class="lbl">In Review</div></div>
+      <div class="stat-card s-done" onclick="toggleStatFilter('done')" id="sc-done"><div class="num" id="stat-done">0</div><div class="lbl">Done (recent)</div></div>
+    </div>
+    <div class="filter-bar">
+      <input class="filter-search" id="searchBox" placeholder="Search..." oninput="applyFilters()">
+      <div class="fsep"></div>
+      <!-- Multi-select dropdowns -->
+      <div class="ms" id="ms-project">
+        <button class="ms-btn" onclick="toggleMs('project')">
+          <span id="ms-project-label">Project</span>
+          <span class="ms-badge" id="ms-project-badge" style="display:none"></span>
+          <span class="ms-arrow">▾</span>
+        </button>
+        <div class="ms-panel" id="ms-panel-project">
+          <div class="ms-search-wrap"><input class="ms-search" placeholder="Search projects..." oninput="filterMsList('project',this.value)"></div>
+          <div class="ms-list" id="ms-list-project"></div>
+          <div class="ms-actions">
+            <button onclick="clearMs('project')">Clear all</button>
+            <button onclick="selectAllMs('project')">Select all</button>
+          </div>
+        </div>
+      </div>
+      <div class="ms" id="ms-epic">
+        <button class="ms-btn" onclick="toggleMs('epic')">
+          <span id="ms-epic-label">Epic</span>
+          <span class="ms-badge" id="ms-epic-badge" style="display:none"></span>
+          <span class="ms-arrow">▾</span>
+        </button>
+        <div class="ms-panel" id="ms-panel-epic">
+          <div class="ms-search-wrap"><input class="ms-search" placeholder="Search epics..." oninput="filterMsList('epic',this.value)"></div>
+          <div class="ms-list" id="ms-list-epic"></div>
+          <div class="ms-actions">
+            <button onclick="clearMs('epic')">Clear all</button>
+            <button onclick="selectAllMs('epic')">Select all</button>
+          </div>
+        </div>
+      </div>
+      <div class="ms" id="ms-priority">
+        <button class="ms-btn" onclick="toggleMs('priority')">
+          <span id="ms-priority-label">Priority</span>
+          <span class="ms-badge" id="ms-priority-badge" style="display:none"></span>
+          <span class="ms-arrow">▾</span>
+        </button>
+        <div class="ms-panel" id="ms-panel-priority">
+          <div class="ms-list" id="ms-list-priority"></div>
+          <div class="ms-actions">
+            <button onclick="clearMs('priority')">Clear all</button>
+            <button onclick="selectAllMs('priority')">Select all</button>
+          </div>
+        </div>
+      </div>
+      <div class="ms" id="ms-type">
+        <button class="ms-btn" onclick="toggleMs('type')">
+          <span id="ms-type-label">Type</span>
+          <span class="ms-badge" id="ms-type-badge" style="display:none"></span>
+          <span class="ms-arrow">▾</span>
+        </button>
+        <div class="ms-panel" id="ms-panel-type">
+          <div class="ms-list" id="ms-list-type"></div>
+          <div class="ms-actions">
+            <button onclick="clearMs('type')">Clear all</button>
+            <button onclick="selectAllMs('type')">Select all</button>
+          </div>
+        </div>
+      </div>
+      <div class="fsep"></div>
+      <span class="flbl">Created:</span>
+      <div class="date-filter-group">
+        <div class="date-inputs">
+          <input type="date" id="createdFrom" onchange="syncSliderFromDates(); scheduleDateLoad()" title="Created from">
+          <span class="flbl">to</span>
+          <input type="date" id="createdTo" onchange="syncSliderFromDates(); scheduleDateLoad()" title="Created to">
+        </div>
+        <div class="dual-range" id="dateSliderWrap" style="display:none">
+          <div class="dual-range-track"><div class="dual-range-fill" id="sliderFill"></div></div>
+          <input type="range" id="sliderFrom" min="0" max="100" value="0" oninput="syncDatesFromSlider()">
+          <input type="range" id="sliderTo" min="0" max="100" value="100" oninput="syncDatesFromSlider()">
+        </div>
+      </div>
+    </div>
+    <div id="view-all" class="view active"></div>
+    <div id="view-project" class="view"></div>
+    <div id="view-sprint" class="view"></div>
+    <div id="view-status" class="view"></div>
+    <div id="view-epic" class="view"></div>
+  </div>
+</div>
+
+<div id="copy-toast">Copied to clipboard</div>
+<div id="edit-popover">
+  <div class="ep-header" id="ep-header"></div>
+  <div class="ep-list" id="ep-list"></div>
+  <div class="ep-input-wrap" id="ep-input-wrap" style="display:none"></div>
+</div>
+
+<!-- Comments popout -->
+<div id="comment-popout">
+  <div class="cp-hdr">
+    <span class="cp-key" id="cp-key"></span>
+    <span class="cp-title" id="cp-title"></span>
+    <a class="cp-open" id="cp-open" href="#" target="_blank">Open in Jira ↗</a>
+    <button class="cp-close" onclick="closeComments()">✕</button>
+  </div>
+  <div class="cp-body" id="cp-body"></div>
+  <div class="cp-count" id="cp-count"></div>
+  <div class="cp-compose">
+    <div class="mention-dropdown" id="mention-dropdown"></div>
+    <textarea class="cp-textarea" id="cp-textarea" placeholder="Add a comment… type @ to mention someone" rows="2"
+      oninput="onComposeInput(event)" onkeydown="onComposeKeydown(event)"></textarea>
+    <div class="cp-submit-row">
+      <span class="cp-char-hint" id="cp-char-hint"></span>
+      <button class="cp-submit" id="cp-submit" onclick="submitComment()" disabled>Post</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const GROUP_ORDER_KEY = 'jira-dash-group-order';
+let groupOrder = JSON.parse(localStorage.getItem(GROUP_ORDER_KEY) || '{}');
+function saveGroupOrder() { localStorage.setItem(GROUP_ORDER_KEY, JSON.stringify(groupOrder)); }
+
+let allIssues = [], doneIssues = [];
+let statFilter = null; // 'todo' | 'prog' | 'rev' | 'done' | null
+let showDone = false, currentTab = 'all', currentMode = 'both';
+let jiraBaseUrl = '';
+let epicLinkField = 'customfield_10014';
+let sortState = { col: null, dir: 'asc' };
+let msState = { project: new Set(), epic: new Set(), priority: new Set(), type: new Set() };
+let msOptions = { project: [], epic: [], priority: [], type: [] };
+let activeMs = null;
+
+// ─── Column definitions ───────────────────────────────────────────────────────
+const COL_STORE_KEY = 'jira-dash-col-widths-v6';
+const DEFAULT_WIDTHS = { key: 175, epic: 155, status: 150, priority: 105, assignee: 125, reporter: 125, created: 100, due: 105, daysopen: 105, sprint: 125, notes: 36 };
+let colWidths = { ...DEFAULT_WIDTHS, ...(JSON.parse(localStorage.getItem(COL_STORE_KEY) || '{}')) };
+
+function saveColWidths() { localStorage.setItem(COL_STORE_KEY, JSON.stringify(colWidths)); }
+
+function gridTemplate() {
+  return `${colWidths.key}px 1fr ${colWidths.epic}px ${colWidths.status}px ${colWidths.priority}px ${colWidths.assignee}px ${colWidths.reporter}px ${colWidths.created}px ${colWidths.due}px ${colWidths.daysopen}px ${colWidths.sprint}px ${colWidths.notes}px`;
+}
+
+function applyColWidths() {
+  document.querySelectorAll('.issue-row').forEach(r => r.style.gridTemplateColumns = gridTemplate());
+}
+
+// ─── Priority / status helpers ────────────────────────────────────────────────
+const PRI_ORDER = { Highest: 0, High: 1, Medium: 2, Low: 3, Lowest: 4 };
+const PRI_COLOR = { Blocker: '#f85149', Critical: '#f85149', Highest: '#f85149', High: '#db6d28', Major: '#db6d28', Medium: '#d29922', Low: '#58a6ff', Minor: '#58a6ff', Lowest: '#8b949e', Trivial: '#8b949e' };
+const STATUS_CAT_ORDER = { 'To Do': 0, 'In Progress': 1, 'In Review': 2, 'Done': 3, Other: 4 };
+
+const STATUS_PALETTE_DARK = [
+  { bg: '#1c2b3a', fg: '#58a6ff', br: '#1d4a7a' },
+  { bg: '#2a1f47', fg: '#bc8cff', br: '#4a2d8c' },
+  { bg: '#2e2318', fg: '#e3a84a', br: '#5a3f1a' },
+  { bg: '#2e1f1a', fg: '#db6d28', br: '#5a3a1d' },
+  { bg: '#1a2e2c', fg: '#39c5c0', br: '#1d4a48' },
+  { bg: '#2e1a2a', fg: '#e475d0', br: '#5a1d50' },
+  { bg: '#1e2e1a', fg: '#56d364', br: '#1d5a28' },
+  { bg: '#2e1a1e', fg: '#ff7b9c', br: '#5a1d2a' },
+  { bg: '#1a2535', fg: '#79b8ff', br: '#1d3a5a' },
+  { bg: '#2b1a35', fg: '#d2a8ff', br: '#4a1d6a' },
+];
+const STATUS_PALETTE_LIGHT = [
+  { bg: '#dbeafe', fg: '#1d4ed8', br: '#93c5fd' },
+  { bg: '#ede9fe', fg: '#6d28d9', br: '#c4b5fd' },
+  { bg: '#fef3c7', fg: '#92400e', br: '#fcd34d' },
+  { bg: '#ffedd5', fg: '#c2410c', br: '#fdba74' },
+  { bg: '#ccfbf1', fg: '#0f766e', br: '#5eead4' },
+  { bg: '#fce7f3', fg: '#be185d', br: '#f9a8d4' },
+  { bg: '#dcfce7', fg: '#15803d', br: '#86efac' },
+  { bg: '#ffe4e6', fg: '#be123c', br: '#fda4af' },
+  { bg: '#e0f2fe', fg: '#0369a1', br: '#7dd3fc' },
+  { bg: '#f3e8ff', fg: '#7e22ce', br: '#d8b4fe' },
+];
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function statusCat(issue) {
+  return (issue.fields.status && issue.fields.status.statusCategory && issue.fields.status.statusCategory.name) || 'Other';
+}
+
+function isLight() { return document.body.classList.contains('light'); }
+
+function statusStyle(name, cat) {
+  const c = (cat || '').toLowerCase();
+  if (c === 'done' || c === 'complete')
+    return isLight()
+      ? 'background:#dcfce7;color:#15803d;border:1px solid #86efac'
+      : 'background:#162414;color:#3fb950;border:1px solid #1d4a1d';
+  const palette = isLight() ? STATUS_PALETTE_LIGHT : STATUS_PALETTE_DARK;
+  const p = palette[hashStr(name) % palette.length];
+  return `background:${p.bg};color:${p.fg};border:1px solid ${p.br}`;
+}
+function getSprint(fields) {
+  const s = fields.customfield_10020 || fields.sprint;
+  if (!s) return null;
+  if (Array.isArray(s)) return s.find(x => x.state === 'active') || s[s.length - 1];
+  return s;
+}
+function getEpic(fields) { return fields[epicLinkField] || fields.customfield_10014 || null; }
+
+function formatDate(d) {
+  if (!d) return '';
+  const dt = new Date(d), diff = (Date.now() - dt) / 3600000;
+  if (diff < 1) return 'just now';
+  if (diff < 24) return Math.floor(diff) + 'h ago';
+  if (diff < 48) return 'yesterday';
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
+
+function formatAbsDate(d) {
+  if (!d) return '';
+  const dt = new Date(d.length === 10 ? d + 'T12:00:00' : d);
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── Sorting ──────────────────────────────────────────────────────────────────
+function sortIssues(issues) {
+  if (!sortState.col) return issues;
+  const dir = sortState.dir === 'asc' ? 1 : -1;
+  return [...issues].sort((a, b) => {
+    let av, bv;
+    const af = a.fields, bf = b.fields;
+    switch (sortState.col) {
+      case 'key':
+        av = a.key; bv = b.key;
+        return dir * av.localeCompare(bv, undefined, { numeric: true });
+      case 'summary':
+        av = af.summary || ''; bv = bf.summary || '';
+        return dir * av.localeCompare(bv);
+      case 'status':
+        av = STATUS_CAT_ORDER[statusCat(a)] ?? 9;
+        bv = STATUS_CAT_ORDER[statusCat(b)] ?? 9;
+        return dir * (av - bv);
+      case 'priority':
+        av = PRI_ORDER[af.priority && af.priority.name] ?? 9;
+        bv = PRI_ORDER[bf.priority && bf.priority.name] ?? 9;
+        return dir * (av - bv);
+      case 'type':
+        av = (af.issuetype && af.issuetype.name) || '';
+        bv = (bf.issuetype && bf.issuetype.name) || '';
+        return dir * av.localeCompare(bv);
+      case 'assignee':
+        av = (af.assignee && af.assignee.displayName) || '';
+        bv = (bf.assignee && bf.assignee.displayName) || '';
+        return dir * av.localeCompare(bv);
+      case 'reporter':
+        av = (af.reporter && af.reporter.displayName) || '';
+        bv = (bf.reporter && bf.reporter.displayName) || '';
+        return dir * av.localeCompare(bv);
+      case 'due':
+        av = af.duedate || '9999'; bv = bf.duedate || '9999';
+        return dir * av.localeCompare(bv);
+      case 'created':
+        av = af.created || ''; bv = bf.created || '';
+        return dir * av.localeCompare(bv);
+      case 'daysopen':
+        av = af.created ? Math.floor((Date.now() - new Date(af.created)) / 86400000) : 0;
+        bv = bf.created ? Math.floor((Date.now() - new Date(bf.created)) / 86400000) : 0;
+        return dir * (av - bv);
+      default: return 0;
+    }
+  });
+}
+
+function setSort(col) {
+  if (sortState.col === col) {
+    sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortState.col = col;
+    sortState.dir = 'asc';
+  }
+  applyFilters();
+}
+
+// ─── Multi-select ─────────────────────────────────────────────────────────────
+function buildMsOptions(issues) {
+  const projects = {}, epics = {}, priorities = new Set(), types = new Set();
+  issues.forEach(i => {
+    const f = i.fields;
+    if (f.project) projects[f.project.key] = f.project.name;
+    const ep = getEpic(f); if (ep) epics[ep] = ep;
+    if (f.priority && f.priority.name) priorities.add(f.priority.name);
+    if (f.issuetype && f.issuetype.name) types.add(f.issuetype.name);
+  });
+  msOptions.project = Object.entries(projects).map(([k, n]) => ({ value: k, label: `${n} (${k})` })).sort((a,b)=>a.label.localeCompare(b.label));
+  msOptions.epic    = Object.keys(epics).map(k => ({ value: k, label: k })).sort((a,b)=>a.label.localeCompare(b.label));
+  msOptions.priority = [...priorities].sort((a,b) => (PRI_ORDER[a]||9)-(PRI_ORDER[b]||9)).map(v => ({ value: v, label: v }));
+  msOptions.type    = [...types].sort().map(v => ({ value: v, label: v }));
+  ['project','epic','priority','type'].forEach(k => renderMsList(k, ''));
+}
+
+function renderMsList(key, search) {
+  const el = document.getElementById('ms-list-' + key);
+  const opts = msOptions[key].filter(o => !search || o.label.toLowerCase().includes(search.toLowerCase()));
+  el.innerHTML = opts.map(o => `
+    <div class="ms-item">
+      <input type="checkbox" id="ms-${key}-${esc(o.value)}" value="${esc(o.value)}"
+        ${msState[key].has(o.value) ? 'checked' : ''}
+        onchange="toggleMsItem('${key}','${esc(o.value).replace(/'/g,"\\'")}',this.checked)">
+      <label for="ms-${key}-${esc(o.value)}" title="${esc(o.label)}">${esc(o.label)}</label>
+    </div>`).join('');
+}
+
+function filterMsList(key, val) { renderMsList(key, val); }
+
+async function enrichEpicNames() {
+  const values = msOptions.epic.map(o => o.value).filter(Boolean);
+  if (!values.length) return;
+  try {
+    const res = await fetch('/api/epics?keys=' + encodeURIComponent(values.join(',')));
+    const data = await res.json();
+    if (!data.epics || !data.epics.length) return;
+    // Map both by key and by summary so either format resolves to the Epic Name
+    data.epics.forEach(e => {
+      epicNameMap[e.key] = e.name;
+      if (e.summary) epicNameMap[e.summary] = e.name;
+    });
+    msOptions.epic = msOptions.epic.map(o => ({
+      value: o.value,
+      label: epicNameMap[o.value] || o.value,
+    }));
+    renderMsList('epic', '');
+    applyFilters();
+  } catch {}
+}
+
+function toggleMsItem(key, value, checked) {
+  if (checked) msState[key].add(value); else msState[key].delete(value);
+  updateMsBtn(key);
+  applyFilters();
+}
+
+function updateMsBtn(key) {
+  const count = msState[key].size;
+  const badge = document.getElementById('ms-' + key + '-badge');
+  const btn = document.querySelector('#ms-' + key + ' .ms-btn');
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = '';
+    btn.classList.add('has-sel');
+  } else {
+    badge.style.display = 'none';
+    btn.classList.remove('has-sel');
+  }
+}
+
+function clearMs(key) {
+  msState[key].clear();
+  updateMsBtn(key);
+  renderMsList(key, '');
+  applyFilters();
+}
+
+function selectAllMs(key) {
+  msOptions[key].forEach(o => msState[key].add(o.value));
+  updateMsBtn(key);
+  renderMsList(key, '');
+  applyFilters();
+}
+
+function toggleMs(key) {
+  if (activeMs === key) { closeMs(); return; }
+  if (activeMs) closeMs();
+  activeMs = key;
+  document.getElementById('ms-panel-' + key).classList.add('open');
+}
+function closeMs() {
+  if (activeMs) document.getElementById('ms-panel-' + activeMs).classList.remove('open');
+  activeMs = null;
+}
+
+document.addEventListener('click', e => {
+  if (activeMs && !document.getElementById('ms-' + activeMs).contains(e.target)) closeMs();
+  const cp = document.getElementById('comment-popout');
+  if (cp.classList.contains('open') && !cp.contains(e.target) && !e.target.closest('.note-btn')) closeComments();
+});
+
+// ─── Edit popover ─────────────────────────────────────────────────────────────
+let _editPopoverOpen = false;
+
+function positionPopover(e) {
+  const pop = document.getElementById('edit-popover');
+  // Add open first so it's visible and measurable, then reposition
+  pop.classList.add('open');
+  _editPopoverOpen = true;
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let x = e.clientX, y = e.clientY + 12;
+  if (x + pw > window.innerWidth - 8) x = window.innerWidth - pw - 8;
+  if (y + ph > window.innerHeight - 8) y = e.clientY - ph - 8;
+  pop.style.left = Math.max(8, x) + 'px';
+  pop.style.top  = Math.max(8, y) + 'px';
+}
+
+let _epItems = [], _epOnPick = null;
+
+function openEditList(title, items, onPick, { searchable = true } = {}) {
+  // stamp origIdx so filtering can still call back with the right index
+  _epItems = items.map((it, i) => ({ ...it, _origIdx: i }));
+  _epOnPick = onPick;
+  document.getElementById('ep-header').textContent = title;
+  const wrap = document.getElementById('ep-input-wrap');
+  if (searchable) {
+    wrap.style.display = 'flex';
+    wrap.innerHTML = `<input class="ep-input" id="ep-search" placeholder="Type to filter…"
+      oninput="_filterEpList(this.value)"
+      onkeydown="if(event.key==='Escape')closeEditPopover();">`;
+    setTimeout(() => { const f = document.getElementById('ep-search'); if(f) f.focus(); }, 50);
+  } else {
+    wrap.style.display = 'none';
+  }
+  _renderEpList(_epItems);
+}
+
+function _renderEpList(items) {
+  document.getElementById('ep-list').innerHTML = items.length
+    ? items.map(it =>
+        `<div class="ep-item ${it.current ? 'current' : ''}" onclick="_epOnPick(${it._origIdx})">${it.html}</div>`
+      ).join('')
+    : '<div class="ep-loading" style="color:var(--muted)">No matches</div>';
+}
+
+function _filterEpList(q) {
+  const lq = q.toLowerCase();
+  _renderEpList(lq ? _epItems.filter(it => (it.text || '').toLowerCase().includes(lq)) : _epItems);
+}
+
+
+function openEditInput(title, value, placeholder, onSave) {
+  document.getElementById('ep-header').textContent = title;
+  document.getElementById('ep-list').innerHTML = '';
+  const wrap = document.getElementById('ep-input-wrap');
+  wrap.style.display = 'flex';
+  wrap.innerHTML = `
+    <input class="ep-input" id="ep-field" value="${esc(value)}" placeholder="${esc(placeholder)}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('ep-save-btn').click();}if(event.key==='Escape')closeEditPopover();">
+    <button class="ep-save" id="ep-save-btn">Save</button>`;
+  document.getElementById('ep-save-btn').onclick = () => onSave(document.getElementById('ep-field').value.trim());
+  setTimeout(() => { const f = document.getElementById('ep-field'); if(f){f.focus();f.select();} }, 50);
+}
+
+function closeEditPopover() {
+  document.getElementById('edit-popover').classList.remove('open');
+  _editPopoverOpen = false;
+}
+
+function updateLocalIssue(key, fields) {
+  const issue = [...allIssues, ...doneIssues].find(i => i.key === key);
+  if (issue) Object.assign(issue.fields, fields);
+  applyFilters();
+}
+
+async function apiPut(key, fields) {
+  const r = await fetch(`/api/issue/${encodeURIComponent(key)}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ fields }),
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+}
+
+// Status
+async function editStatus(key, e) {
+  e.stopPropagation();
+  document.getElementById('ep-header').textContent = 'Loading…';
+  document.getElementById('ep-list').innerHTML = '<div class="ep-loading">Fetching transitions…</div>';
+  document.getElementById('ep-input-wrap').style.display = 'none';
+  positionPopover(e);
+  try {
+    const res = await fetch(`/api/transitions/${encodeURIComponent(key)}`);
+    const transitions = await res.json();
+    const issue = [...allIssues, ...doneIssues].find(i => i.key === key);
+    const curStatus = issue && issue.fields.status && issue.fields.status.name;
+    openEditList('Change Status', transitions.map(t => ({
+      current: t.to && t.to.name === curStatus,
+      text: t.to.name,
+      html: `<span class="status-badge" style="${statusStyle(t.to.name, t.to.statusCategory && t.to.statusCategory.name)}">${esc(t.to.name)}</span>`,
+      t,
+    })), (i) => {
+      const t = transitions[i];
+      fetch(`/api/transition/${encodeURIComponent(key)}`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ transitionId: t.id }),
+      }).then(() => {
+        if (issue) {
+          issue.fields.status = t.to;
+          issue.fields.status.statusCategory = t.to.statusCategory;
+        }
+        applyFilters();
+      });
+      closeEditPopover();
+    });
+  } catch(err) {
+    document.getElementById('ep-list').innerHTML = `<div class="ep-loading" style="color:var(--red)">${esc(err.message)}</div>`;
+  }
+}
+
+// Priority
+let _cachedPriorities = null;
+async function editPriority(key, current, e) {
+  e.stopPropagation();
+  document.getElementById('ep-header').textContent = 'Loading…';
+  document.getElementById('ep-list').innerHTML = '<div class="ep-loading">Fetching priorities…</div>';
+  document.getElementById('ep-input-wrap').style.display = 'none';
+  positionPopover(e);
+  try {
+    if (!_cachedPriorities) {
+      const r = await fetch('/api/priorities');
+      _cachedPriorities = await r.json();
+    }
+    openEditList('Change Priority', _cachedPriorities.map(p => ({
+      current: p.name === current,
+      text: p.name,
+      html: `<span class="pri-dot" style="background:${PRI_COLOR[p.name]||'#8b949e'}"></span>${esc(p.name)}`,
+      p,
+    })), (i) => {
+      const p = _cachedPriorities[i];
+      apiPut(key, { priority: { name: p.name } }).then(() =>
+        updateLocalIssue(key, { priority: { name: p.name } })
+      );
+      closeEditPopover();
+    });
+  } catch(err) {
+    document.getElementById('ep-list').innerHTML = `<div class="ep-loading" style="color:var(--red)">${esc(err.message)}</div>`;
+  }
+}
+
+// Due date
+function editDueDate(key, current, e) {
+  e.stopPropagation();
+  document.getElementById('ep-list').innerHTML = '';
+  document.getElementById('ep-input-wrap').style.display = 'none';
+  positionPopover(e);
+  openEditInput('Set Due Date', current, 'YYYY-MM-DD', async (val) => {
+    const date = val || null;
+    try {
+      await apiPut(key, { duedate: date });
+      updateLocalIssue(key, { duedate: date });
+      closeEditPopover();
+    } catch(err) { alert(err.message); }
+  });
+  // Switch input to type=date for a native picker
+  const f = document.getElementById('ep-field');
+  if (f) { f.type = 'date'; f.value = current || ''; }
+}
+
+// Summary
+function editSummary(key, current, e) {
+  e.stopPropagation();
+  document.getElementById('ep-list').innerHTML = '';
+  document.getElementById('ep-input-wrap').style.display = 'none';
+  positionPopover(e);
+  document.getElementById('ep-header').textContent = 'Edit Summary';
+  const wrap = document.getElementById('ep-input-wrap');
+  wrap.style.display = 'flex';
+  wrap.innerHTML = `
+    <input class="ep-input" id="ep-field" value="${esc(current)}" placeholder="Summary"
+      style="min-width:260px"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('ep-save-btn').click();}if(event.key==='Escape')closeEditPopover();">
+    <button class="ep-save" id="ep-save-btn">Save</button>`;
+  document.getElementById('ep-save-btn').onclick = async () => {
+    const val = document.getElementById('ep-field').value.trim();
+    if (!val) return;
+    try {
+      await apiPut(key, { summary: val });
+      updateLocalIssue(key, { summary: val });
+      closeEditPopover();
+    } catch(err) { alert(err.message); }
+  };
+  setTimeout(() => { const f = document.getElementById('ep-field'); if(f){f.focus();f.select();} }, 50);
+}
+
+// Sprint
+let _cachedSprints = null;
+async function editSprint(key, e) {
+  e.stopPropagation();
+  document.getElementById('ep-header').textContent = 'Loading…';
+  document.getElementById('ep-list').innerHTML = '<div class="ep-loading">Fetching sprints…</div>';
+  document.getElementById('ep-input-wrap').style.display = 'none';
+  positionPopover(e);
+  try {
+    if (!_cachedSprints) {
+      const r = await fetch('/api/sprints');
+      _cachedSprints = await r.json();
+    }
+    const items = [
+      { current: false, text: 'backlog', html: '<span style="color:var(--muted)">No sprint (backlog)</span>', id: null },
+      ..._cachedSprints.map(s => ({
+        current: false,
+        text: s.name,
+        html: `<span class="sprint-badge">${esc(s.name)}</span>${s.state==='active'?' <span style="font-size:10px;color:var(--green)">active</span>':''}`,
+        id: s.id,
+      }))
+    ];
+    openEditList('Change Sprint', items, (i) => {
+      const item = items[i];
+      if (item.id) {
+        fetch(`/api/sprint/${item.id}/issue`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ issues: [key] }),
+        }).then(() => {
+          const sprint = _cachedSprints.find(s => s.id === item.id);
+          updateLocalIssue(key, { customfield_10020: sprint ? [sprint] : null });
+        });
+      } else {
+        apiPut(key, { customfield_10020: null }).then(() =>
+          updateLocalIssue(key, { customfield_10020: null })
+        );
+      }
+      closeEditPopover();
+    });
+  } catch(err) {
+    document.getElementById('ep-list').innerHTML = `<div class="ep-loading" style="color:var(--red)">${esc(err.message)}</div>`;
+  }
+}
+
+// Assignee
+async function editAssignee(key, currentName, e) {
+  e.stopPropagation();
+  document.getElementById('ep-header').textContent = 'Change Assignee';
+  document.getElementById('ep-list').innerHTML = '';
+  const wrap = document.getElementById('ep-input-wrap');
+  wrap.style.display = 'flex';
+  wrap.innerHTML = `<input class="ep-input" id="ep-search" placeholder="Search by name…"
+    oninput="_searchAssignees('${esc(key)}', this.value)"
+    onkeydown="if(event.key==='Escape')closeEditPopover();">`;
+  positionPopover(e);
+  document.getElementById('ep-list').innerHTML = '<div class="ep-loading">Type to search users…</div>';
+  setTimeout(() => { const f = document.getElementById('ep-search'); if(f) f.focus(); }, 50);
+}
+
+let _assigneeTimer = null;
+function _searchAssignees(key, q) {
+  clearTimeout(_assigneeTimer);
+  if (!q) { document.getElementById('ep-list').innerHTML = '<div class="ep-loading">Type to search users…</div>'; return; }
+  _assigneeTimer = setTimeout(async () => {
+    document.getElementById('ep-list').innerHTML = '<div class="ep-loading">Searching…</div>';
+    try {
+      const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+      const users = await r.json();
+      if (!users.length) { document.getElementById('ep-list').innerHTML = '<div class="ep-loading" style="color:var(--muted)">No users found</div>'; return; }
+      document.getElementById('ep-list').innerHTML = [
+        `<div class="ep-item" onclick="_pickAssignee('${esc(key)}',null,null)"><span style="color:var(--muted)">Unassigned</span></div>`,
+        ...users.map(u => `<div class="ep-item" onclick="_pickAssignee('${esc(key)}','${esc(u.name)}','${esc(u.displayName)}')">${esc(u.displayName)}</div>`)
+      ].join('');
+    } catch(err) {
+      document.getElementById('ep-list').innerHTML = `<div class="ep-loading" style="color:var(--red)">${esc(err.message)}</div>`;
+    }
+  }, 250);
+}
+
+async function _pickAssignee(key, username, displayName) {
+  try {
+    await apiPut(key, { assignee: username ? { name: username } : null });
+    updateLocalIssue(key, { assignee: username ? { displayName, name: username } : null });
+    closeEditPopover();
+  } catch(err) { alert(err.message); }
+}
+
+document.addEventListener('click', e => {
+  if (_editPopoverOpen && !document.getElementById('edit-popover').contains(e.target)) closeEditPopover();
+});
+
+// ─── Copy ticket ─────────────────────────────────────────────────────────────
+let _toastTimer = null;
+function copyTicket(key, project, summary, url) {
+  const text = `${key} | ${project} | ${summary}\n${url}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('copy-toast');
+    toast.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  });
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+const noteSvg = `<svg viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 3V3z"/>
+</svg>`;
+
+// Cache comment counts so icon can show filled/empty state
+const commentCounts = {};
+const epicNameMap = {};
+
+function extractText(node) {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (node.type === 'text') return node.text || '';
+  if (node.type === 'hardBreak') return '\n';
+  if (node.content) return node.content.map(extractText).join('');
+  return '';
+}
+
+async function openComments(key, summary, event) {
+  event.stopPropagation();
+  const popout = document.getElementById('comment-popout');
+  if (popout.classList.contains('open') && popout.dataset.key === key) {
+    closeComments(); return;
+  }
+  popout.dataset.key = key;
+  _currentCommentKey = key;
+  document.getElementById('cp-textarea').value = '';
+  document.getElementById('cp-submit').disabled = true;
+  document.getElementById('cp-char-hint').textContent = '';
+  document.getElementById('cp-key').textContent = key;
+  document.getElementById('cp-title').textContent = summary;
+  document.getElementById('cp-open').href = `${jiraBaseUrl}/browse/${key}`;
+  document.getElementById('cp-body').innerHTML = '<div class="cp-loading">Loading comments...</div>';
+  document.getElementById('cp-count').textContent = '';
+  popout.classList.add('open');
+
+  // Position near the click
+  const rect = event.target.closest('.note-btn').getBoundingClientRect();
+  let left = rect.left - 430, top = rect.bottom + 6;
+  if (left < 8) left = Math.min(rect.right + 6, window.innerWidth - 428);
+  if (top + 500 > window.innerHeight) top = Math.max(8, rect.top - 490);
+  popout.style.left = Math.max(8, left) + 'px';
+  popout.style.top = Math.max(8, top) + 'px';
+
+  try {
+    const res = await fetch(`/api/comments/${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const comments = data.comments || [];
+    commentCounts[key] = comments.length;
+
+    if (!comments.length) {
+      document.getElementById('cp-body').innerHTML = '<div class="cp-empty">No comments on this issue.</div>';
+      document.getElementById('cp-count').textContent = '';
+      return;
+    }
+
+    document.getElementById('cp-count').textContent = `${comments.length} comment${comments.length !== 1 ? 's' : ''}`;
+    document.getElementById('cp-body').innerHTML = comments.map(c => {
+      const author = (c.author && (c.author.displayName || c.author.name)) || 'Unknown';
+      const date = formatDate(c.created);
+      const body = typeof c.body === 'string' ? c.body : extractText(c.body);
+      return `<div class="comment">
+        <div class="comment-meta">
+          <span class="comment-author">${esc(author)}</span>
+          <span class="comment-date">${esc(date)}</span>
+        </div>
+        <div class="comment-body">${esc(body)}</div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    document.getElementById('cp-body').innerHTML = `<div class="cp-empty" style="color:var(--red)">${esc(err.message)}</div>`;
+  }
+}
+
+async function reloadComments(key) {
+  try {
+    const res = await fetch(`/api/comments/${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const comments = data.comments || [];
+    document.getElementById('cp-count').textContent = `${comments.length} comment${comments.length !== 1 ? 's' : ''}`;
+    document.getElementById('cp-body').innerHTML = comments.length
+      ? comments.map(c => {
+          const author = (c.author && (c.author.displayName || c.author.name)) || 'Unknown';
+          const body = typeof c.body === 'string' ? c.body : extractText(c.body);
+          return `<div class="comment">
+            <div class="comment-meta">
+              <span class="comment-author">${esc(author)}</span>
+              <span class="comment-date">${esc(formatDate(c.created))}</span>
+            </div>
+            <div class="comment-body">${esc(body)}</div>
+          </div>`;
+        }).join('')
+      : '<div class="cp-empty">No comments on this issue.</div>';
+  } catch (err) {
+    document.getElementById('cp-body').innerHTML = `<div class="cp-empty" style="color:var(--red)">${esc(err.message)}</div>`;
+  }
+}
+
+function closeComments() {
+  document.getElementById('comment-popout').classList.remove('open');
+  closeMentionDropdown();
+}
+
+// ─── Comment compose + @mention ──────────────────────────────────────────────
+let _mentionUsers = [], _mentionIdx = -1, _mentionQuery = '', _mentionStart = -1;
+let _userSearchTimer = null;
+let _currentCommentKey = null;
+
+function onComposeInput(e) {
+  const ta = e.target;
+  document.getElementById('cp-submit').disabled = !ta.value.trim();
+  document.getElementById('cp-char-hint').textContent = ta.value.length ? `${ta.value.length} chars` : '';
+
+  // Detect @mention
+  const val = ta.value, pos = ta.selectionStart;
+  const before = val.slice(0, pos);
+  const match = before.match(/@(\w*)$/);
+  if (match) {
+    _mentionQuery = match[1];
+    _mentionStart = pos - match[0].length;
+    clearTimeout(_userSearchTimer);
+    _userSearchTimer = setTimeout(() => searchMentionUsers(_mentionQuery), 200);
+  } else {
+    closeMentionDropdown();
+  }
+}
+
+function onComposeKeydown(e) {
+  const dd = document.getElementById('mention-dropdown');
+  if (!dd.classList.contains('open')) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submitComment(); }
+    return;
+  }
+  if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIdx(_mentionIdx + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIdx(_mentionIdx - 1); }
+  else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickMention(_mentionIdx); }
+  else if (e.key === 'Escape') { closeMentionDropdown(); }
+}
+
+async function searchMentionUsers(q) {
+  try {
+    const res = await fetch('/api/users?q=' + encodeURIComponent(q));
+    const users = await res.json();
+    _mentionUsers = Array.isArray(users) ? users : [];
+    _mentionIdx = _mentionUsers.length ? 0 : -1;
+    renderMentionDropdown();
+  } catch { closeMentionDropdown(); }
+}
+
+function renderMentionDropdown() {
+  const dd = document.getElementById('mention-dropdown');
+  if (!_mentionUsers.length) { closeMentionDropdown(); return; }
+  dd.innerHTML = _mentionUsers.map((u, i) => `
+    <div class="mention-item ${i === _mentionIdx ? 'active' : ''}" onmousedown="pickMention(${i})">
+      <span class="mention-name">${esc(u.displayName)}</span>
+      <span class="mention-handle">@${esc(u.name)}</span>
+    </div>`).join('');
+  dd.classList.add('open');
+}
+
+function setMentionIdx(i) {
+  _mentionIdx = Math.max(0, Math.min(_mentionUsers.length - 1, i));
+  renderMentionDropdown();
+}
+
+function pickMention(i) {
+  const user = _mentionUsers[i];
+  if (!user) return;
+  const ta = document.getElementById('cp-textarea');
+  const val = ta.value;
+  ta.value = val.slice(0, _mentionStart) + `[~${user.name}]` + val.slice(ta.selectionStart);
+  const cur = _mentionStart + `[~${user.name}]`.length;
+  ta.setSelectionRange(cur, cur);
+  ta.focus();
+  document.getElementById('cp-submit').disabled = !ta.value.trim();
+  closeMentionDropdown();
+}
+
+function closeMentionDropdown() {
+  document.getElementById('mention-dropdown').classList.remove('open');
+  _mentionUsers = []; _mentionIdx = -1;
+}
+
+async function submitComment() {
+  const ta = document.getElementById('cp-textarea');
+  const body = ta.value.trim();
+  if (!body || !_currentCommentKey) return;
+  const btn = document.getElementById('cp-submit');
+  btn.disabled = true;
+  btn.textContent = 'Posting…';
+  try {
+    const res = await fetch(`/api/comments/${encodeURIComponent(_currentCommentKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    ta.value = '';
+    document.getElementById('cp-char-hint').textContent = '';
+    // Reload comments to show the new one
+    await reloadComments(_currentCommentKey);
+  } catch (err) {
+    document.getElementById('cp-char-hint').textContent = 'Error: ' + err.message;
+    btn.disabled = false;
+  }
+  btn.textContent = 'Post';
+}
+
+// ─── Column resize ────────────────────────────────────────────────────────────
+function startResize(e, col) {
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget;
+  handle.classList.add('dragging');
+  handle.setPointerCapture(e.pointerId);
+  const startX = e.clientX;
+  const startW = colWidths[col] || 100;
+
+  function onMove(ev) {
+    colWidths[col] = Math.max(40, startW + (ev.clientX - startX));
+    applyColWidths();
+  }
+  function onUp() {
+    handle.classList.remove('dragging');
+    handle.removeEventListener('pointermove', onMove);
+    handle.removeEventListener('pointerup', onUp);
+    saveColWidths();
+  }
+  handle.addEventListener('pointermove', onMove);
+  handle.addEventListener('pointerup', onUp);
+}
+
+// ─── Date debounce ────────────────────────────────────────────────────────────
+let _dateTimer = null;
+function scheduleDateLoad() {
+  clearTimeout(_dateTimer);
+  _dateTimer = setTimeout(() => loadIssues(), 600);
+}
+
+// ─── Date slider ─────────────────────────────────────────────────────────────
+let sliderMinDate = null, sliderMaxDate = null, sliderInitialized = false;
+
+function dateToNum(str) { return str ? new Date(str).getTime() : 0; }
+function numToDateStr(ms) { return new Date(ms).toISOString().slice(0, 10); }
+
+function initDateSlider(issues) {
+  // Only set the absolute min/max once — never shrink it when filtered data reloads
+  if (sliderInitialized) return;
+  const dates = issues.map(i => i.fields.created).filter(Boolean).sort();
+  if (dates.length < 2) return;
+  sliderMinDate = dates[0].slice(0, 10);
+  sliderMaxDate = dates[dates.length - 1].slice(0, 10);
+
+  const sf = document.getElementById('sliderFrom');
+  const st = document.getElementById('sliderTo');
+  const minMs = dateToNum(sliderMinDate);
+  const maxMs = dateToNum(sliderMaxDate);
+  sf.min = st.min = minMs;
+  sf.max = st.max = maxMs;
+  sf.value = minMs;
+  st.value = maxMs;
+
+  document.getElementById('dateSliderWrap').style.display = 'block';
+  sliderInitialized = true;
+  updateSliderFill();
+}
+
+function updateSliderFill() {
+  const sf = document.getElementById('sliderFrom');
+  const st = document.getElementById('sliderTo');
+  const min = +sf.min, max = +sf.max;
+  const range = max - min || 1;
+  const left  = ((+sf.value - min) / range) * 100;
+  const right = ((+st.value - min) / range) * 100;
+  document.getElementById('sliderFill').style.left  = left + '%';
+  document.getElementById('sliderFill').style.width = (right - left) + '%';
+  // Ensure from <= to
+  if (+sf.value > +st.value) sf.value = st.value;
+}
+
+function syncDatesFromSlider() {
+  const sf = document.getElementById('sliderFrom');
+  const st = document.getElementById('sliderTo');
+  if (+sf.value > +st.value) { sf.value = st.value; }
+  document.getElementById('createdFrom').value = numToDateStr(+sf.value);
+  document.getElementById('createdTo').value   = numToDateStr(+st.value);
+  updateSliderFill();
+  scheduleDateLoad();
+}
+
+function syncSliderFromDates() {
+  const from = document.getElementById('createdFrom').value;
+  const to   = document.getElementById('createdTo').value;
+  if (!sliderMinDate) return;
+  const sf = document.getElementById('sliderFrom');
+  const st = document.getElementById('sliderTo');
+  if (from) sf.value = dateToNum(from);
+  if (to)   st.value = dateToNum(to);
+  updateSliderFill();
+}
+
+// ─── Render helpers ───────────────────────────────────────────────────────────
+function thCell(col, label, sortable) {
+  const isActive = sortState.col === col;
+  const dir = isActive ? (sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc') : '';
+  const click = sortable ? `onclick="setSort('${col}')"` : '';
+  const cls = [sortable ? 'sortable' : '', dir].filter(Boolean).join(' ');
+  const rz = (col !== 'notes') ? `<div class="resize-handle" onpointerdown="startResize(event,'${col}')"></div>` : '';
+  const si = sortable ? `<span class="sort-icon"></span>` : '';
+  return `<div class="th-cell"><div class="th-inner ${cls}" ${click}>${esc(label)}${si}</div>${rz}</div>`;
+}
+
+function thead() {
+  return `<div class="issue-row hdr" style="grid-template-columns:${gridTemplate()}">
+    ${thCell('key','Key',true)}
+    <div class="th-cell"><div class="th-inner sortable" onclick="setSort('summary')">Summary<span class="sort-icon"></span></div></div>
+    ${thCell('epic','Epic',false)}
+    ${thCell('status','Status',true)}
+    ${thCell('priority','Priority',true)}
+    ${thCell('assignee','Assignee',true)}
+    ${thCell('reporter','Created By',true)}
+    ${thCell('created','Created',true)}
+    ${thCell('due','Due Date',true)}
+    ${thCell('daysopen','Days Open',true)}
+    ${thCell('sprint','Sprint',false)}
+    ${thCell('notes','',false)}
+  </div>`;
+}
+
+function issueRow(issue) {
+  const f = issue.fields, key = issue.key;
+  const url = `${jiraBaseUrl}/browse/${key}`;
+  const cat = statusCat(issue);
+  const sl = (f.status && f.status.name) || cat;
+  const sc = statusStyle(sl, cat);
+  const pri = f.priority ? f.priority.name : '';
+  const priColor = PRI_COLOR[pri] || '#8b949e';
+  const type = (f.issuetype && f.issuetype.name) || '';
+  const sprint = getSprint(f);
+  const hasCmts = (f.comment && f.comment.total > 0) || (commentCounts[key] || 0) > 0;
+  const summaryEsc = esc(f.summary||'').replace(/'/g, '&#39;');
+
+  return `<div class="issue-row" style="grid-template-columns:${gridTemplate()}">
+    <div class="cell" style="flex-direction:column;align-items:flex-start;gap:2px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <a class="issue-key" href="${url}" target="_blank">${esc(key)}</a>
+        <button class="copy-btn" onclick="copyTicket('${esc(key)}','${esc((f.project&&f.project.name)||'')}','${esc(f.summary||'').replace(/'/g,"\\'")}','${url}')" title="Copy to clipboard">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="9" height="11" rx="1.5"/><path d="M3 5H2.5A1.5 1.5 0 001 6.5v7A1.5 1.5 0 002.5 15h6A1.5 1.5 0 0010 13.5V13"/>
+          </svg>
+        </button>
+      </div>
+      <span style="font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${esc(f.project && f.project.name || '')}</span>
+    </div>
+    <div class="cell" style="gap:4px"><a class="issue-link" href="${url}" target="_blank" title="${esc(f.summary||'')}">${esc(f.summary||'')}</a><span class="edit-pencil" onclick="event.stopPropagation();editSummary('${esc(key)}','${esc(f.summary||'').replace(/'/g,"\\'")}',event)" title="Edit summary">✎</span></div>
+    <div class="cell">${(() => { const ek = getEpic(f); if (!ek) return ''; const isKey = /^[A-Z][A-Z0-9]*-\d+$/.test(ek); const en = isKey ? (epicNameMap[ek] || ek) : ek; return `<span class="sprint-badge" title="${esc(ek)}">${esc(en)}</span>`; })()}</div>
+    <div class="cell editable" onclick="editStatus('${esc(key)}',event)" title="Change status"><span class="status-badge" style="${sc}">${esc(sl)}</span></div>
+    <div class="cell editable" onclick="editPriority('${esc(key)}','${esc(pri)}',event)" title="Change priority"><span class="pri-dot" style="background:${priColor}" title="${esc(pri)}"></span><span class="muted">${esc(pri)}</span></div>
+    <div class="cell editable" onclick="editAssignee('${esc(key)}','${esc((f.assignee&&f.assignee.displayName)||'')}',event)" title="Change assignee"><span class="muted">${esc((f.assignee && f.assignee.displayName) || 'Unassigned')}</span></div>
+    <div class="cell"><span class="muted">${esc((f.reporter && f.reporter.displayName) || '')}</span></div>
+    <div class="cell"><span class="muted" title="${esc(f.created||'')}">${formatAbsDate(f.created)}</span></div>
+    <div class="cell editable" onclick="editDueDate('${esc(key)}','${esc(f.duedate||'')}',event)" title="Change due date"><span class="${f.duedate && new Date(f.duedate+'T12:00:00') < new Date() ? 'overdue' : 'muted'}">${formatAbsDate(f.duedate)||'<span style="color:var(--muted);font-size:11px">Set date</span>'}</span></div>
+    <div class="cell" style="justify-content:center"><span class="muted">${f.created ? Math.floor((Date.now() - new Date(f.created)) / 86400000) : ''}</span></div>
+    <div class="cell editable" onclick="editSprint('${esc(key)}',event)" title="Change sprint">${sprint ? `<span class="sprint-badge">${esc(sprint.name)}</span>` : '<span style="color:var(--muted);font-size:11px">Set sprint</span>'}</div>
+    <div class="cell" style="justify-content:center;padding:4px 8px">
+      <button class="note-btn ${hasCmts?'has-comments':''}" data-key="${esc(key)}"
+        onclick="openComments('${esc(key)}','${summaryEsc}',event)"
+        title="View Jira comments">${noteSvg}</button>
+    </div>
+  </div>`;
+}
+
+function makeTable(issues) {
+  if (!issues.length) return emptyState();
+  return `<div class="tbl-wrap"><div class="issue-table">${thead()}${sortIssues(issues).map(issueRow).join('')}</div></div>`;
+}
+
+function groupBlock(title, issues, id, subtitle, groupKey) {
+  if (!issues.length) return '';
+  return `<div class="group" id="grp-${esc(id)}" data-group-key="${esc(groupKey||id)}">
+    <div class="group-header" onclick="toggleGroup('grp-${esc(id)}')">
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <h3>${esc(title)}</h3>
+      ${subtitle ? `<span class="grp-sub">${esc(subtitle)}</span>` : ''}
+      <span class="grp-count">${issues.length}</span>
+      <span class="chevron">&#9660;</span>
+    </div>
+    <div class="tbl-wrap"><div class="issue-table">${thead()}${sortIssues(issues).map(issueRow).join('')}</div></div>
+  </div>`;
+}
+
+function emptyState() { return `<div class="empty-state"><div class="icon">✅</div><p>No issues found</p></div>`; }
+function toggleGroup(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+function initGroupDrag(viewId) {
+  const container = document.getElementById(viewId);
+  let dragging = null;
+  let handleDown = false;
+
+  container.querySelectorAll('.group').forEach(grp => {
+    grp.setAttribute('draggable', 'true');
+    const handle = grp.querySelector('.drag-handle');
+
+    handle.addEventListener('mousedown', () => { handleDown = true; });
+
+    grp.addEventListener('dragstart', e => {
+      if (!handleDown) { e.preventDefault(); return; }
+      dragging = grp;
+      grp.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', ''); // required for Firefox
+    });
+
+    grp.addEventListener('dragend', () => {
+      handleDown = false;
+      dragging = null;
+      grp.classList.remove('dragging');
+      container.querySelectorAll('.group').forEach(g => g.classList.remove('drag-over-top', 'drag-over-bot'));
+    });
+
+    grp.addEventListener('dragover', e => {
+      if (!dragging || dragging === grp) return;
+      e.preventDefault();
+      const mid = grp.getBoundingClientRect().top + grp.getBoundingClientRect().height / 2;
+      grp.classList.toggle('drag-over-top', e.clientY < mid);
+      grp.classList.toggle('drag-over-bot', e.clientY >= mid);
+    });
+
+    grp.addEventListener('dragleave', () => {
+      grp.classList.remove('drag-over-top', 'drag-over-bot');
+    });
+
+    grp.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragging || dragging === grp) return;
+      const mid = grp.getBoundingClientRect().top + grp.getBoundingClientRect().height / 2;
+      if (e.clientY < mid) container.insertBefore(dragging, grp);
+      else grp.after(dragging);
+      grp.classList.remove('drag-over-top', 'drag-over-bot');
+      groupOrder[viewId] = [...container.querySelectorAll('.group')].map(g => g.dataset.groupKey);
+      saveGroupOrder();
+    });
+  });
+
+  document.addEventListener('mouseup', () => { handleDown = false; }, { once: false });
+}
+function collapseAll() { document.querySelectorAll('.group').forEach(g => g.classList.add('collapsed')); }
+function expandAll() { document.querySelectorAll('.group').forEach(g => g.classList.remove('collapsed')); }
+
+// ─── Filter logic ─────────────────────────────────────────────────────────────
+const STAT_CAT_MAP = {
+  todo: c => c.includes('to do') || c === 'new',
+  prog: c => c.includes('progress') || c === 'indeterminate',
+  rev:  c => !c.includes('to do') && !c.includes('progress') && c !== 'new' && c !== 'indeterminate' && c !== 'done' && c !== 'complete',
+  done: c => c === 'done' || c === 'complete',
+};
+
+function toggleStatFilter(key) {
+  statFilter = statFilter === key ? null : key;
+  ['todo','prog','rev','done'].forEach(k =>
+    document.getElementById('sc-' + k).classList.toggle('active', statFilter === k));
+  applyFilters();
+}
+
+function getFiltered() {
+  const q = (document.getElementById('searchBox').value || '').toLowerCase();
+  let issues = showDone ? [...allIssues, ...doneIssues] : allIssues;
+  return issues.filter(i => {
+    const f = i.fields;
+    if (q && !i.key.toLowerCase().includes(q) && !(f.summary||'').toLowerCase().includes(q)) return false;
+    if (msState.project.size && !msState.project.has(f.project && f.project.key)) return false;
+    if (msState.epic.size   && !msState.epic.has(getEpic(f))) return false;
+    if (msState.priority.size && !msState.priority.has(f.priority && f.priority.name)) return false;
+    if (msState.type.size   && !msState.type.has(f.issuetype && f.issuetype.name)) return false;
+    if (statFilter) {
+      const cat = statusCat(i).toLowerCase();
+      if (!STAT_CAT_MAP[statFilter](cat)) return false;
+    }
+    return true;
+  });
+}
+
+function applyFilters() {
+  const issues = getFiltered();
+  renderAll(issues);
+  renderByGroup('view-project', issues, i => {
+    const p = i.fields.project; return p ? { key: p.key, label: p.name } : { key: '__none__', label: 'No Project' };
+  });
+  renderByGroup('view-sprint', issues, i => {
+    const s = getSprint(i.fields); return s ? { key: s.id||s.name, label: s.name, sub: s.state } : { key: '__nosprint__', label: 'No Sprint' };
+  }, (a, b) => {
+    if (a.sub === 'active') return -1; if (b.sub === 'active') return 1;
+    if (a.key === '__nosprint__') return 1; if (b.key === '__nosprint__') return -1;
+    return a.label.localeCompare(b.label);
+  });
+  renderByGroup('view-status', issues, i => {
+    const cat = statusCat(i); return { key: cat, label: cat };
+  }, (a, b) => (STATUS_CAT_ORDER[a.key]??9) - (STATUS_CAT_ORDER[b.key]??9));
+  renderByGroup('view-epic', issues, i => {
+    const ep = getEpic(i.fields); return ep ? { key: ep, label: ep } : { key: '__noepic__', label: 'No Epic' };
+  }, (a, b) => { if (a.key==='__noepic__') return 1; if (b.key==='__noepic__') return -1; return a.label.localeCompare(b.label); });
+  updateCounts(issues);
+}
+
+function renderAll(issues) {
+  document.getElementById('view-all').innerHTML = makeTable(issues);
+}
+
+function renderByGroup(viewId, issues, groupFn, sortFn) {
+  const groups = {};
+  issues.forEach(i => {
+    const g = groupFn(i);
+    if (!groups[g.key]) groups[g.key] = { label: g.label, sub: g.sub||'', issues: [] };
+    groups[g.key].issues.push(i);
+  });
+  let entries = Object.entries(groups);
+  if (sortFn) entries.sort((a, b) => sortFn({ key: a[0], ...a[1] }, { key: b[0], ...b[1] }));
+  else entries.sort((a,b) => b[1].issues.length - a[1].issues.length);
+
+  // Apply saved drag order if present
+  const saved = groupOrder[viewId];
+  if (saved && saved.length) {
+    const idx = {};
+    saved.forEach((k, i) => { idx[k] = i; });
+    entries.sort((a, b) => (idx[a[0]] ?? 9999) - (idx[b[0]] ?? 9999));
+  }
+
+  document.getElementById(viewId).innerHTML = entries.map(([k, g], i) =>
+    groupBlock(g.label, g.issues, viewId + '-' + i, g.sub, k)).join('') || emptyState();
+  initGroupDrag(viewId);
+}
+
+function updateCounts(issues) {
+  document.getElementById('cnt-all').textContent = issues.length;
+  document.getElementById('cnt-project').textContent = new Set(issues.map(i => i.fields.project && i.fields.project.key)).size;
+  document.getElementById('cnt-sprint').textContent = new Set(issues.map(i => { const s=getSprint(i.fields); return s?s.id:'none'; })).size;
+  document.getElementById('cnt-status').textContent = new Set(issues.map(i => statusCat(i))).size;
+  document.getElementById('cnt-epic').textContent = new Set(issues.map(i => getEpic(i.fields)||'__none__')).size;
+}
+
+function updateStats() {
+  let todo=0, prog=0, rev=0;
+  allIssues.forEach(i => {
+    const cat = statusCat(i).toLowerCase();
+    if (cat.includes('to do')||cat==='new') todo++;
+    else if (cat.includes('progress')||cat==='indeterminate') prog++;
+    else rev++;
+  });
+  document.getElementById('stat-todo').textContent = todo;
+  document.getElementById('stat-prog').textContent = prog;
+  document.getElementById('stat-rev').textContent = rev;
+  document.getElementById('stat-done').textContent = doneIssues.length;
+}
+
+// ─── Tab / mode / toggle ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('view-' + tab).classList.add('active');
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  ['assigned','both','watched'].forEach(m => document.getElementById('mode-'+m).classList.toggle('active', m===mode));
+  loadIssues();
+}
+
+async function toggleDone() {
+  showDone = !showDone;
+  const btn = document.getElementById('doneToggle');
+  btn.textContent = showDone ? 'Hide Done' : 'Show Done';
+  btn.classList.toggle('active', showDone);
+  if (showDone && !doneIssues.length) {
+    try {
+      const r = await fetch('/api/issues/done?' + buildParams());
+      const d = await r.json();
+      doneIssues = d.issues || [];
+      updateStats();
+    } catch {}
+  }
+  applyFilters();
+}
+
+function buildParams() {
+  const p = new URLSearchParams({ mode: currentMode });
+  const from = document.getElementById('createdFrom').value;
+  const to   = document.getElementById('createdTo').value;
+  if (from) p.set('createdFrom', from);
+  if (to)   p.set('createdTo', to);
+  return p.toString();
+}
+
+// ─── Default view ────────────────────────────────────────────────────────────
+const DEFAULT_VIEW_KEY = 'jira-dash-default-view';
+
+function saveDefaultView() {
+  const state = {
+    mode: currentMode,
+    tab: currentTab,
+    search: document.getElementById('searchBox').value,
+    createdFrom: document.getElementById('createdFrom').value,
+    createdTo: document.getElementById('createdTo').value,
+    filters: {
+      project:  [...msState.project],
+      epic:     [...msState.epic],
+      priority: [...msState.priority],
+      type:     [...msState.type],
+    },
+  };
+  localStorage.setItem(DEFAULT_VIEW_KEY, JSON.stringify(state));
+  document.getElementById('clearDefaultBtn').style.display = '';
+  // Brief visual confirmation
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = 'Saved!';
+  btn.classList.add('active');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('active'); }, 1200);
+}
+
+function clearDefaultView() {
+  localStorage.removeItem(DEFAULT_VIEW_KEY);
+  document.getElementById('clearDefaultBtn').style.display = 'none';
+  const btn = event.target;
+  btn.textContent = 'Cleared';
+  setTimeout(() => { btn.textContent = 'Clear Default'; }, 1200);
+}
+
+function restoreDefaultView() {
+  const raw = localStorage.getItem(DEFAULT_VIEW_KEY);
+  if (!raw) return;
+  document.getElementById('clearDefaultBtn').style.display = '';
+  const state = JSON.parse(raw);
+  if (state.mode) {
+    currentMode = state.mode;
+    ['assigned','both','watched'].forEach(m => document.getElementById('mode-'+m).classList.toggle('active', m === state.mode));
+  }
+  if (state.search) document.getElementById('searchBox').value = state.search;
+  if (state.createdFrom) document.getElementById('createdFrom').value = state.createdFrom;
+  if (state.createdTo)   document.getElementById('createdTo').value   = state.createdTo;
+  if (state.filters) {
+    Object.entries(state.filters).forEach(([k, vals]) => {
+      msState[k] = new Set(vals);
+      updateMsBtn(k);
+    });
+  }
+  if (state.tab) switchTab(state.tab);
+}
+
+// ─── Load ─────────────────────────────────────────────────────────────────────
+async function loadIssues() {
+  document.getElementById('loading-view').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('error-view').style.display = 'none';
+  doneIssues = [];
+
+  try {
+    const cfg = await (await fetch('/api/config')).json();
+    if (!cfg.configured) {
+      document.getElementById('loading-view').style.display = 'none';
+      document.getElementById('setup-view').style.display = 'block';
+      return;
+    }
+    jiraBaseUrl = cfg.baseUrl;
+    if (cfg.epicLinkField) epicLinkField = cfg.epicLinkField;
+
+    const res = await fetch('/api/issues?' + buildParams());
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    allIssues = data.issues || [];
+    document.getElementById('loading-view').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('lastRefresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    document.getElementById('doneToggle').textContent = 'Show Done';
+    document.getElementById('doneToggle').classList.remove('active');
+    showDone = false;
+
+    buildMsOptions(allIssues);
+    enrichEpicNames();
+    initDateSlider(allIssues);
+    updateStats();
+    applyFilters();
+  } catch (err) {
+    document.getElementById('loading-view').style.display = 'none';
+    document.getElementById('error-view').style.display = 'block';
+    document.getElementById('error-view').innerHTML = `<div class="error-banner"><strong>Error:</strong> ${esc(err.message)}</div>`;
+  }
+}
+
+function toggleTheme() {
+  const light = document.body.classList.toggle('light');
+  document.getElementById('themeToggle').textContent = light ? '☀️' : '🌙';
+  localStorage.setItem('jira-dash-theme', light ? 'light' : 'dark');
+  applyFilters(); // re-render so status badge colors update
+}
+(function() {
+  if (localStorage.getItem('jira-dash-theme') === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+})();
+
+restoreDefaultView();
+loadIssues();
+</script>
+</body>
+</html>
