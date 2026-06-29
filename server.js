@@ -1,4 +1,5 @@
 require('dotenv').config();
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // allow self-signed certs on internal Jira instances
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
