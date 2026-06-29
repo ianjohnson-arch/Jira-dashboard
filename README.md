@@ -1,50 +1,80 @@
 # Jira Dashboard
 
-A local dashboard for Jira Data Center that makes it easy to see, filter, and edit everything assigned to or watched by you -- all in one place.
+A personal dashboard that shows all your Jira issues in one place -- filter, sort, group, and edit them without leaving your browser.
 
-## Features
+---
 
-- All issues assigned to or watched by you in a single table
-- Group by project, sprint, status, or epic
-- Inline editing: status, priority, due date, summary, sprint, and assignee
-- Filter by project, epic, status, priority, and date range
-- Stat cards (To Do / In Progress / In Review / Done) that act as filters
-- Light and dark mode
-- Copy tickets to clipboard in Slack-friendly format
-- Comment on issues with @mention support
-- Sortable, resizable columns
-- Saves your preferred view to the browser
+## Step 1 -- Download the code
 
-## Requirements
+1. Go to the repository page on GitHub
+2. Click the green **Code** button
+3. Click **Download ZIP**
+4. Once downloaded, find the ZIP in your Downloads folder and double-click it to unzip
+5. Move the unzipped `Jira-dashboard` folder somewhere easy to find, like your Desktop
 
-- [Node.js](https://nodejs.org/) v16 or later
-- A Jira Data Center instance
-- A Jira personal access token (PAT)
+---
 
-## Setup
+## Step 2 -- Install Node.js
 
-### 1. Get a Jira API token
+Node.js is what runs the dashboard on your computer. You only need to do this once.
 
-1. Log in to your Jira instance
-2. Click your avatar in the top right and go to **Profile**
-3. In the left sidebar choose **Personal Access Tokens**
-4. Click **Create token**, give it a name, and copy the value
+1. Go to [nodejs.org](https://nodejs.org)
+2. Click the big **LTS** download button (the one that says "Recommended for most users")
+3. Open the downloaded file and follow the installer -- just keep clicking Next/Continue
+4. When it finishes, close the installer
 
-### 2. Install and configure
+---
 
-```bash
-# Clone the repo
-git clone <repo-url>
-cd jira-dashboard
+## Step 3 -- Open Terminal
 
-# Install dependencies
-npm install
+**On Mac:**
+- Press `Command + Space`, type `Terminal`, press Enter
 
-# Create your local config
-cp .env.example .env
+**On Windows:**
+- Press the Windows key, type `PowerShell`, press Enter
+
+---
+
+## Step 4 -- Navigate to the dashboard folder
+
+In the Terminal window, type the following and press Enter. Replace the path with wherever you put the folder:
+
+**Mac:**
+```
+cd ~/Desktop/Jira-dashboard
 ```
 
-Open `.env` in any text editor and fill in your details:
+**Windows:**
+```
+cd C:\Users\YourName\Desktop\Jira-dashboard
+```
+
+> Tip: You can also type `cd ` (with a space) and then drag the folder into the Terminal window -- it will fill in the path for you.
+
+---
+
+## Step 5 -- Install dependencies
+
+Copy and paste this into Terminal and press Enter:
+
+```
+npm install
+```
+
+You'll see some text scroll by. Wait for it to finish (usually under a minute).
+
+---
+
+## Step 6 -- Add your Jira credentials
+
+1. Open the `Jira-dashboard` folder in Finder (Mac) or File Explorer (Windows)
+2. Find the file called `.env.example`
+3. Make a copy of it and rename the copy to `.env` (just `.env`, no `.example`)
+
+> On Mac, files starting with `.` may be hidden. Press `Command + Shift + .` in Finder to show hidden files.
+
+4. Open `.env` with any text editor (TextEdit on Mac, Notepad on Windows)
+5. Fill in your details:
 
 ```
 JIRA_BASE_URL=https://your-jira-instance.com
@@ -53,30 +83,74 @@ JIRA_API_TOKEN=your_personal_access_token_here
 PORT=3737
 ```
 
-> Your `.env` file is listed in `.gitignore` and will never be committed. Keep your token private.
+**Where to get your Jira API token:**
+1. Log in to Jira
+2. Click your profile picture in the top right
+3. Go to **Profile** then **Personal Access Tokens** in the left sidebar
+4. Click **Create token**, give it any name, and copy the value
+5. Paste it into the `.env` file next to `JIRA_API_TOKEN=`
 
-### 3. Run
+6. Save and close the `.env` file
 
-```bash
+---
+
+## Step 7 -- Start the dashboard
+
+In Terminal, paste this and press Enter:
+
+```
 npm start
 ```
 
-Open [http://localhost:3737](http://localhost:3737) in your browser.
+You should see:
+```
+Jira Dashboard running at http://localhost:3737
+```
 
-## Usage tips
+---
 
-- **Change a field inline** -- click any status, priority, due date, sprint, or assignee cell directly in the table
-- **Edit a summary** -- hover over a row and click the pencil icon
-- **Group issues** -- use the Group By selector in the toolbar; drag group headers to reorder
-- **Filter by stat card** -- click To Do, In Progress, In Review, or Done at the top to narrow the table
-- **Copy to Slack** -- click the copy icon on any row to get `KEY | Project | Summary` + link
-- **Comments** -- click the chat icon on any row to read and post comments (@mention with `@name`)
+## Step 8 -- Open it in your browser
+
+Open any browser (Chrome, Safari, Edge) and go to:
+
+```
+http://localhost:3737
+```
+
+Your Jira issues should load within a few seconds.
+
+---
+
+## Every time you want to use it
+
+You don't need to repeat all the steps above. From next time:
+
+1. Open Terminal
+2. Navigate to the folder: `cd ~/Desktop/Jira-dashboard`
+3. Start it: `npm start`
+4. Open your browser to `http://localhost:3737`
+
+To stop the dashboard, go back to Terminal and press `Control + C`.
+
+---
+
+## Tips
+
+- **Change a field** -- click any status, priority, due date, sprint, or assignee cell directly in the table
+- **Edit a summary** -- hover over a row and click the pencil icon that appears
+- **Group issues** -- use the Group By dropdown in the toolbar; drag group headers to reorder
+- **Filter by status** -- click the To Do / In Progress / In Review / Done cards at the top
+- **Copy to Slack** -- click the copy icon on any row to get a formatted message with the ticket key, project, and link
+- **Comments** -- click the chat bubble icon on any row to read and post comments
+
+---
 
 ## Troubleshooting
 
-| Problem | Fix |
+| Problem | What to do |
 |---|---|
-| Page loads but no issues appear | Check that `JIRA_BASE_URL` has no trailing slash and your token is correct |
-| Epic column is blank | The server auto-detects custom field IDs on startup -- check the terminal for `Epic Link field:` output |
-| Spinning on status/priority change | Confirm your token has write permissions in Jira |
-| Port already in use | Change `PORT=3737` in `.env` to any free port |
+| `npm: command not found` | Node.js didn't install correctly -- go back to Step 2 |
+| Page loads but no issues show | Double-check your `.env` file -- make sure there are no extra spaces and the URL has no trailing slash |
+| `EADDRINUSE` error | Something else is using port 3737 -- change `PORT=3737` to `PORT=3738` in `.env` |
+| Can't find the `.env.example` file | Enable hidden files: on Mac press `Command + Shift + .` in Finder |
+| Token error from Jira | Make sure you created a Personal Access Token (not your Jira password) |
