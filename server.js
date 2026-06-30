@@ -3,11 +3,12 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // allow self-signed certs on in
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3737;
 
-const { JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN } = process.env;
+let { JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN } = process.env;
 
 let EPIC_LINK_FIELD = 'customfield_10014'; // resolved at startup
 let EPIC_NAME_FIELD = 'customfield_10008'; // resolved at startup
@@ -220,6 +221,33 @@ app.get('/api/config', (req, res) => {
     epicNameField: EPIC_NAME_FIELD,
     configured: !!(JIRA_BASE_URL && JIRA_EMAIL && JIRA_API_TOKEN),
   });
+});
+
+// Setup endpoint — writes .env and reloads config
+app.post('/api/setup', express.json(), (req, res) => {
+  const { baseUrl, email, token } = req.body;
+  if (!baseUrl || !email || !token) return res.status(400).json({ error: 'All fields required' });
+  const envPath = path.join(__dirname, '.env');
+  const content = `JIRA_BASE_URL=${baseUrl.replace(/\/$/, '')}\nJIRA_EMAIL=${email}\nJIRA_API_TOKEN=${token}\nPORT=${PORT}\n`;
+  try {
+    fs.writeFileSync(envPath, content);
+    JIRA_BASE_URL = baseUrl.replace(/\/$/, '');
+    JIRA_EMAIL = email;
+    JIRA_API_TOKEN = token;
+    resolveEpicFields();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Serve setup page if not configured
+app.get('/', (req, res) => {
+  if (!JIRA_BASE_URL || !JIRA_EMAIL || !JIRA_API_TOKEN) {
+    res.sendFile(path.join(__dirname, 'public', 'setup.html'));
+  } else {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));

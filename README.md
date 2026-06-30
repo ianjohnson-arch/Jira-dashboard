@@ -25,7 +25,29 @@ Node.js is what runs the dashboard on your computer. You only need to do this on
 
 ---
 
-## Step 3 -- Open Terminal
+## Step 3 -- Start the dashboard
+
+**On Mac:** Double-click the `start.command` file in the `Jira-dashboard` folder. A terminal window will open and the server will start automatically.
+
+**On Windows:** Double-click the `start.bat` file instead.
+
+> The first time it runs it may take a minute to install dependencies. After that it starts instantly.
+
+---
+
+## Step 4 -- Set up your credentials
+
+Open your browser and go to `http://localhost:3737` -- you'll see a setup form. Fill in:
+
+- **Jira URL** -- the address you use to open Jira (e.g. `https://jira.yourcompany.com`)
+- **Your work email**
+- **Personal Access Token** -- see instructions on the setup page for how to get this
+
+Click **Save & Open Dashboard** and you're done. Your credentials are saved locally and you won't need to do this again.
+
+---
+
+## Old Step 3 -- Open Terminal (manual method)
 
 **On Mac:**
 - Press `Command + Space`, type `Terminal`, press Enter
