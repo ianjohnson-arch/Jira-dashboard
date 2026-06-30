@@ -4,6 +4,12 @@ A personal dashboard that shows all your Jira issues in one place -- filter, sor
 
 ---
 
+## Before you start
+
+Make sure you are connected to the **company VPN** before using the dashboard. Jira is only accessible on the VPN -- if you are not connected, the dashboard will show an error.
+
+---
+
 ## Setup (4 steps)
 
 ### Step 1 -- Download the code
