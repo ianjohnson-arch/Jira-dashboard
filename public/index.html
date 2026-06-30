@@ -282,6 +282,7 @@ body.light .cp-submit { color: #fff; }
   <button class="btn" onclick="loadIssues()">Refresh</button>
   <button class="btn" id="themeToggle" onclick="toggleTheme()" style="font-size:15px;padding:4px 10px" title="Toggle light/dark mode">🌙</button>
   <a class="btn" href="https://github.com/ianjohnson-arch/Jira-dashboard" target="_blank" title="View on GitHub" style="text-decoration:none">GitHub</a>
+  <a id="update-badge" href="https://github.com/ianjohnson-arch/Jira-dashboard" target="_blank" style="display:none;text-decoration:none;background:#e3a008;color:#000;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600" title="A newer version is available -- click to download">Update available</a>
   <span class="last-refresh" id="lastRefresh"></span>
 </header>
 
@@ -978,6 +979,20 @@ async function _pickAssignee(key, username, displayName) {
 document.addEventListener('click', e => {
   if (_editPopoverOpen && !document.getElementById('edit-popover').contains(e.target)) closeEditPopover();
 });
+
+// ─── Version check ───────────────────────────────────────────────────────────
+async function checkForUpdates() {
+  try {
+    const [local, remote] = await Promise.all([
+      fetch('/api/version').then(r => r.json()),
+      fetch('https://raw.githubusercontent.com/ianjohnson-arch/Jira-dashboard/main/package.json').then(r => r.json()),
+    ]);
+    if (local.version && remote.version && remote.version !== local.version) {
+      document.getElementById('update-badge').style.display = 'inline-block';
+    }
+  } catch {}
+}
+checkForUpdates();
 
 // ─── Copy ticket ─────────────────────────────────────────────────────────────
 let _toastTimer = null;

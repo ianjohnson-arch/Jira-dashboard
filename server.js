@@ -214,6 +214,10 @@ app.get('/api/comments/:key', async (req, res) => {
   }
 });
 
+app.get('/api/version', (req, res) => {
+  res.json({ version: require('./package.json').version });
+});
+
 app.get('/api/config', (req, res) => {
   res.json({
     baseUrl: JIRA_BASE_URL,
