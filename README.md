@@ -34,7 +34,17 @@ Node.js is what runs the dashboard on your computer. You only need to do this on
 
 A terminal window will open and the server will start automatically. The first time it runs it may take a minute to install dependencies -- after that it starts instantly.
 
-> If Mac says it can't open the file because it's from an unidentified developer: right-click the file, choose **Open**, then click **Open** again in the dialog.
+**First time on Mac only -- allowing the file to open:**
+
+Mac will block the file the first time since it was downloaded from the internet. Here's how to allow it:
+
+1. Double-click `start.command` -- it will get blocked and nothing will happen
+2. Open **System Settings** (the gear icon in your Dock)
+3. Go to **Privacy & Security**
+4. Scroll down until you see a message saying `start.command was blocked`
+5. Click **Open Anyway**
+6. Enter your Mac password if asked
+7. Double-click `start.command` again -- it will open normally this time and every time after
 
 ---
 
