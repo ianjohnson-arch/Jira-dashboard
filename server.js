@@ -181,6 +181,24 @@ app.post('/api/comments/:key', express.json(), async (req, res) => {
   }
 });
 
+app.get('/api/epics/search', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const jql = q
+      ? `issuetype = Epic AND summary ~ "${q.replace(/"/g, '\\"')}*" ORDER BY updated DESC`
+      : `issuetype = Epic ORDER BY updated DESC`;
+    const data = await jiraGet(`/search?jql=${encodeURIComponent(jql)}&maxResults=20&fields=summary,${EPIC_NAME_FIELD}`);
+    const epics = (data.issues || []).map(i => ({
+      key: i.key,
+      summary: i.fields.summary || '',
+      name: i.fields[EPIC_NAME_FIELD] || i.fields.summary || i.key,
+    }));
+    res.json({ epics });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/epics', async (req, res) => {
   try {
     const values = (req.query.keys || '').split(',').map(k => k.trim()).filter(Boolean);
