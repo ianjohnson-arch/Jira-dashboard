@@ -283,6 +283,7 @@ body.light .cp-submit { color: #fff; }
   <button class="btn" id="themeToggle" onclick="toggleTheme()" style="font-size:15px;padding:4px 10px" title="Toggle light/dark mode">🌙</button>
   <a class="btn" href="https://github.com/ianjohnson-arch/Jira-dashboard" target="_blank" title="View on GitHub" style="text-decoration:none">GitHub</a>
   <a id="update-badge" href="https://github.com/ianjohnson-arch/Jira-dashboard" target="_blank" style="display:none;text-decoration:none;background:#e3a008;color:#000;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600" title="A newer version is available -- click to download">Update available</a>
+  <button id="autostart-btn" class="btn" onclick="toggleAutostart()" title="Start dashboard automatically when your Mac turns on" style="display:none">Auto-start: Off</button>
   <span class="last-refresh" id="lastRefresh"></span>
 </header>
 
@@ -979,6 +980,41 @@ async function _pickAssignee(key, username, displayName) {
 document.addEventListener('click', e => {
   if (_editPopoverOpen && !document.getElementById('edit-popover').contains(e.target)) closeEditPopover();
 });
+
+// ─── Auto-start ──────────────────────────────────────────────────────────────
+async function initAutostart() {
+  try {
+    const r = await fetch('/api/autostart');
+    const d = await r.json();
+    if (!d.supported) return;
+    const btn = document.getElementById('autostart-btn');
+    btn.style.display = '';
+    btn.textContent = d.enabled ? 'Auto-start: On' : 'Auto-start: Off';
+    btn.classList.toggle('active', d.enabled);
+  } catch {}
+}
+
+async function toggleAutostart() {
+  const btn = document.getElementById('autostart-btn');
+  const isOn = btn.textContent.includes('On');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const r = await fetch('/api/autostart', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ disable: isOn }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    btn.textContent = d.enabled ? 'Auto-start: On' : 'Auto-start: Off';
+    btn.classList.toggle('active', d.enabled);
+  } catch(err) {
+    alert(err.message);
+    btn.textContent = isOn ? 'Auto-start: On' : 'Auto-start: Off';
+  }
+  btn.disabled = false;
+}
+initAutostart();
 
 // ─── Version check ───────────────────────────────────────────────────────────
 async function checkForUpdates() {

@@ -218,6 +218,66 @@ app.get('/api/version', (req, res) => {
   res.json({ version: require('./package.json').version });
 });
 
+// Auto-start: installs a launchd plist on Mac so the server starts on login
+app.post('/api/autostart', express.json(), (req, res) => {
+  const os = require('os');
+  const { execSync } = require('child_process');
+  if (os.platform() !== 'darwin') return res.status(400).json({ error: 'Auto-start is only supported on Mac' });
+
+  try {
+    const appDir = __dirname;
+    const nodePath = process.execPath;
+    const plistDir = path.join(os.homedir(), 'Library', 'LaunchAgents');
+    const plistPath = path.join(plistDir, 'com.jiradashboard.server.plist');
+
+    if (req.body.disable) {
+      try { execSync(`launchctl unload "${plistPath}" 2>/dev/null`); } catch {}
+      if (fs.existsSync(plistPath)) fs.unlinkSync(plistPath);
+      return res.json({ ok: true, enabled: false });
+    }
+
+    if (!fs.existsSync(plistDir)) fs.mkdirSync(plistDir, { recursive: true });
+
+    const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jiradashboard.server</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${nodePath}</string>
+    <string>${path.join(appDir, 'server.js')}</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>${appDir}</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>${path.join(appDir, 'dashboard.log')}</string>
+  <key>StandardErrorPath</key>
+  <string>${path.join(appDir, 'dashboard.log')}</string>
+</dict>
+</plist>`;
+
+    fs.writeFileSync(plistPath, plist);
+    try { execSync(`launchctl unload "${plistPath}" 2>/dev/null`); } catch {}
+    execSync(`launchctl load "${plistPath}"`);
+    res.json({ ok: true, enabled: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/autostart', (req, res) => {
+  const os = require('os');
+  if (os.platform() !== 'darwin') return res.json({ supported: false });
+  const plistPath = path.join(os.homedir(), 'Library', 'LaunchAgents', 'com.jiradashboard.server.plist');
+  res.json({ supported: true, enabled: fs.existsSync(plistPath) });
+});
+
 app.get('/api/config', (req, res) => {
   res.json({
     baseUrl: JIRA_BASE_URL,
