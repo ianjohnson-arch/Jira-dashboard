@@ -288,7 +288,20 @@ body.light .cp-submit { color: #fff; }
   <button class="btn" onclick="loadIssues()">Refresh</button>
   <button class="btn" id="themeToggle" onclick="toggleTheme()" style="font-size:15px;padding:4px 10px" title="Toggle light/dark mode">🌙</button>
   <a class="btn" href="https://github.com/ianjohnson-arch/Jira-dashboard" target="_blank" title="View on GitHub" style="text-decoration:none">GitHub</a>
-  <a id="update-badge" href="https://github.com/ianjohnson-arch/Jira-dashboard" target="_blank" style="display:none;text-decoration:none;background:#e3a008;color:#000;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600" title="A newer version is available -- click to download">Update available</a>
+  <a id="update-badge" href="#" onclick="downloadUpdate(event)" style="display:none;text-decoration:none;background:#e3a008;color:#000;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600">Update available</a>
+  <div id="update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:900;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;max-width:440px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,.5)">
+      <div style="font-size:17px;font-weight:600;margin-bottom:12px">Update your Jira Dashboard</div>
+      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:16px">A new version is downloading now. Once it finishes:</p>
+      <ol style="font-size:14px;line-height:2;padding-left:20px;margin-bottom:20px">
+        <li>Unzip the downloaded file</li>
+        <li>Copy your <code style="background:var(--surface2);padding:2px 6px;border-radius:4px">.env</code> file from your current folder into the new one</li>
+        <li>Double-click <code style="background:var(--surface2);padding:2px 6px;border-radius:4px">start.command</code> in the new folder</li>
+        <li>Bookmark the new dashboard URL if the folder name changed</li>
+      </ol>
+      <button onclick="document.getElementById('update-modal').style.display='none'" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:10px;font-size:14px;font-weight:600;cursor:pointer">Got it</button>
+    </div>
+  </div>
   <button id="autostart-btn" class="btn" onclick="toggleAutostart()" title="Start dashboard automatically when your Mac turns on" style="display:none">Auto-start: Off</button>
   <span class="last-refresh" id="lastRefresh"></span>
 </header>
@@ -1086,6 +1099,16 @@ async function toggleAutostart() {
 initAutostart();
 
 // ─── Version check ───────────────────────────────────────────────────────────
+function downloadUpdate(e) {
+  e.preventDefault();
+  // Trigger ZIP download
+  const a = document.createElement('a');
+  a.href = 'https://github.com/ianjohnson-arch/Jira-dashboard/archive/refs/heads/main.zip';
+  a.click();
+  // Show instructions modal
+  document.getElementById('update-modal').style.display = 'flex';
+}
+
 async function checkForUpdates() {
   try {
     const [local, remote] = await Promise.all([
