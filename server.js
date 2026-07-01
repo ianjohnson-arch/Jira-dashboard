@@ -223,6 +223,15 @@ app.get('/api/epics', async (req, res) => {
   }
 });
 
+app.get('/api/description/:key', async (req, res) => {
+  try {
+    const data = await jiraGet(`/issue/${req.params.key}?fields=summary,description`);
+    res.json({ summary: data.fields.summary, description: data.fields.description });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/comments/:key', async (req, res) => {
   try {
     const data = await jiraGet(`/issue/${req.params.key}/comment?maxResults=50&orderBy=-created`);

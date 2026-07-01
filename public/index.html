@@ -192,8 +192,14 @@ input[type=date]:focus { outline: none; border-color: var(--accent); }
 .note-btn svg { width: 15px; height: 15px; stroke: var(--muted); }
 .note-btn.has-comments svg { stroke: #e8c44a; }
 
-#comment-popout { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.6); z-index: 500; width: 420px; max-height: 480px; display: none; flex-direction: column; }
-#comment-popout.open { display: flex; }
+#comment-popout, #desc-popout { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.6); z-index: 500; width: 480px; max-height: 520px; display: none; flex-direction: column; }
+#comment-popout.open, #desc-popout.open { display: flex; }
+.desc-content h1,.desc-content h2,.desc-content h3 { font-size:14px; font-weight:600; margin:12px 0 4px; }
+.desc-content p { margin-bottom:8px; }
+.desc-content ul,.desc-content ol { padding-left:20px; margin-bottom:8px; }
+.desc-content li { margin-bottom:3px; }
+.desc-content strong { font-weight:600; }
+.desc-content em { font-style:italic; }
 .cp-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 9px; border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 8px; }
 .cp-key { color: var(--accent); font-family: monospace; font-size: 13px; font-weight: 700; }
 .cp-title { color: var(--muted); font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -407,6 +413,16 @@ JIRA_API_TOKEN=your_token_here</code>
 </div>
 
 <!-- Comments popout -->
+<div id="desc-popout">
+  <div class="cp-hdr">
+    <span class="cp-key" id="desc-key"></span>
+    <span class="cp-title" id="desc-title"></span>
+    <a class="cp-open" id="desc-open" href="#" target="_blank">Open in Jira ↗</a>
+    <button class="cp-close" onclick="closeDesc()">✕</button>
+  </div>
+  <div class="cp-body" id="desc-body" style="padding:16px;overflow-y:auto;flex:1;font-size:13px;line-height:1.6"></div>
+</div>
+
 <div id="comment-popout">
   <div class="cp-hdr">
     <span class="cp-key" id="cp-key"></span>
@@ -694,6 +710,8 @@ document.addEventListener('click', e => {
   if (activeMs && !document.getElementById('ms-' + activeMs).contains(e.target)) closeMs();
   const cp = document.getElementById('comment-popout');
   if (cp.classList.contains('open') && !cp.contains(e.target) && !e.target.closest('.note-btn')) closeComments();
+  const dp = document.getElementById('desc-popout');
+  if (dp.classList.contains('open') && !dp.contains(e.target)) closeDesc();
 });
 
 // ─── Edit popover ─────────────────────────────────────────────────────────────
@@ -1194,6 +1212,75 @@ async function reloadComments(key) {
   }
 }
 
+// ─── Description popout ───────────────────────────────────────────────────────
+function renderDesc(node) {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (node.type === 'text') {
+    let t = esc(node.text || '');
+    if (node.marks) node.marks.forEach(m => {
+      if (m.type === 'strong') t = `<strong>${t}</strong>`;
+      if (m.type === 'em') t = `<em>${t}</em>`;
+      if (m.type === 'code') t = `<code>${t}</code>`;
+    });
+    return t;
+  }
+  if (node.type === 'hardBreak') return '<br>';
+  const inner = (node.content || []).map(renderDesc).join('');
+  switch(node.type) {
+    case 'paragraph': return `<p>${inner}</p>`;
+    case 'heading': return `<h${node.attrs&&node.attrs.level||2}>${inner}</h${node.attrs&&node.attrs.level||2}>`;
+    case 'bulletList': return `<ul>${inner}</ul>`;
+    case 'orderedList': return `<ol>${inner}</ol>`;
+    case 'listItem': return `<li>${inner}</li>`;
+    case 'blockquote': return `<blockquote style="border-left:3px solid var(--border);padding-left:10px;color:var(--muted)">${inner}</blockquote>`;
+    case 'codeBlock': return `<pre style="background:var(--surface2);padding:8px;border-radius:4px;overflow-x:auto;font-size:12px">${inner}</pre>`;
+    case 'doc': return inner;
+    default: return inner;
+  }
+}
+
+async function openDesc(key, summary, event) {
+  event.stopPropagation();
+  const pop = document.getElementById('desc-popout');
+  if (pop.classList.contains('open') && pop.dataset.key === key) { closeDesc(); return; }
+  pop.dataset.key = key;
+  document.getElementById('desc-key').textContent = key;
+  document.getElementById('desc-title').textContent = summary;
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  document.getElementById('desc-open').href = `${cfg.baseUrl}/browse/${key}`;
+  document.getElementById('desc-body').innerHTML = '<div style="color:var(--muted)">Loading…</div>';
+
+  // Position near click
+  const rect = event.target.getBoundingClientRect();
+  const pw = 480, ph = 520;
+  let x = rect.left, y = rect.bottom + 8;
+  if (x + pw > window.innerWidth - 8) x = window.innerWidth - pw - 8;
+  if (y + ph > window.innerHeight - 8) y = rect.top - ph - 8;
+  pop.style.left = Math.max(8, x) + 'px';
+  pop.style.top = Math.max(8, y) + 'px';
+  pop.classList.add('open');
+
+  try {
+    const r = await fetch(`/api/description/${encodeURIComponent(key)}`);
+    const d = await r.json();
+    const desc = d.description;
+    if (!desc) {
+      document.getElementById('desc-body').innerHTML = '<div style="color:var(--muted)">No description.</div>';
+    } else if (typeof desc === 'string') {
+      document.getElementById('desc-body').innerHTML = `<div class="desc-content">${desc.replace(/\n/g,'<br>')}</div>`;
+    } else {
+      document.getElementById('desc-body').innerHTML = `<div class="desc-content">${renderDesc(desc)}</div>`;
+    }
+  } catch(err) {
+    document.getElementById('desc-body').innerHTML = `<div style="color:var(--red)">${esc(err.message)}</div>`;
+  }
+}
+
+function closeDesc() {
+  document.getElementById('desc-popout').classList.remove('open');
+}
+
 function closeComments() {
   document.getElementById('comment-popout').classList.remove('open');
   closeMentionDropdown();
@@ -1451,7 +1538,7 @@ function issueRow(issue) {
       </div>
       <span style="font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${esc(f.project && f.project.name || '')}</span>
     </div>
-    <div class="cell" style="gap:4px"><a class="issue-link" href="${url}" target="_blank" title="${esc(f.summary||'')}">${esc(f.summary||'')}</a><span class="edit-pencil" onclick="event.stopPropagation();editSummary('${esc(key)}','${esc(f.summary||'').replace(/'/g,"\\'")}',event)" title="Edit summary">✎</span></div>
+    <div class="cell" style="gap:4px"><span class="issue-link" style="cursor:pointer" onclick="openDesc('${esc(key)}','${esc(f.summary||'').replace(/'/g,"\\'")}',event)" title="View description">${esc(f.summary||'')}</span><span class="edit-pencil" onclick="event.stopPropagation();editSummary('${esc(key)}','${esc(f.summary||'').replace(/'/g,"\\'")}',event)" title="Edit summary">✎</span></div>
     <div class="cell editable" onclick="editEpic('${esc(key)}',event)" title="Change epic">${(() => { const ek = getEpic(f); if (!ek) return '<span style="color:var(--muted);font-size:11px">Set epic</span>'; const isKey = /^[A-Z][A-Z0-9]*-\d+$/.test(ek); const en = isKey ? (epicNameMap[ek] || ek) : ek; return `<span class="sprint-badge" title="${esc(ek)}">${esc(en)}</span>`; })()}</div>
     <div class="cell editable" onclick="editStatus('${esc(key)}',event)" title="Change status"><span class="status-badge" style="${sc}">${esc(sl)}</span></div>
     <div class="cell editable" onclick="editPriority('${esc(key)}','${esc(pri)}',event)" title="Change priority"><span class="pri-dot" style="background:${priColor}" title="${esc(pri)}"></span><span class="muted">${esc(pri)}</span></div>
